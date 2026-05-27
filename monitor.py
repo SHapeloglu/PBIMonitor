@@ -83,7 +83,7 @@ def dataset_kontrol(user_id, datasets):
             continue
 
         alarm_gonderildi = []
-
+        print(f"Kontrol: {ds['name']} | Durum: {ds['son_durum']} | 24saat: {son_24_saat_mi(ds['son_refresh'])}")
         if son_24_saat_mi(ds["son_refresh"]):
             if ds["son_durum"] == "Failed":
                 mesaj = (
