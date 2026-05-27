@@ -39,7 +39,7 @@ def mail_gonder(konu, mesaj, alici, smtp_config):
             server.send_message(msg)
         return True
     except Exception as e:
-        print(f"Mail hatası: {e}")
+        print(f"Mail error: {e}")
         return False
 
 def alarm_log_kaydet(dataset_id, durum, mesaj, kanal):
