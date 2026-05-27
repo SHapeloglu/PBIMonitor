@@ -20,7 +20,7 @@ def login():
         if user and check_password_hash(user['password'], password):
             session['user_id'] = user['id']
             session['email'] = user['email']
-            return redirect(url_for('main.dashboard'))
+            return redirect(url_for('dashboard'))
         
         return render_template('login.html', error='Email veya şifre hatalı')
     
