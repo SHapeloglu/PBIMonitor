@@ -1,0 +1,10 @@
+token.json
+config.json
+__pycache__/
+*.pyc
+stderr.log
+a.py
+zz.py
+WHATSAPP.py
+AP.PY
+git
