@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PBI Monitor</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f7fa; color: #333; }
+        .header { background: #1a1a2e; color: white; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; }
+        .header h1 { font-size: 20px; font-weight: 600; }
+        .badge { padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 500; }
+        .badge-green { background: #1a7a4a; color: #7fffc4; }
+        .badge-red { background: #7a1a1a; color: #ffb3b3; }
+        .container { max-width: 1100px; margin: 24px auto; padding: 0 24px; }
+        .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+        .card-title { font-size: 14px; font-weight: 600; color: #555; margin-bottom: 16px; text-transform: uppercase; letter-spacing: .04em; }
+        .btn { padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; font-weight: 500; }
+        .btn-primary { background: #2563eb; color: white; }
+        .btn-secondary { background: #f1f5f9; color: #333; }
+        .btn:hover { opacity: 0.85; }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; font-size: 12px; color: #888; font-weight: 500; padding: 8px 12px; border-bottom: 1px solid #eee; }
+        td { padding: 10px 12px; font-size: 13px; border-bottom: 1px solid #f5f5f5; }
+        tr:last-child td { border-bottom: none; }
+        .status { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 99px; font-size: 12px; font-weight: 500; }
+        .status-ok { background: #f0fdf4; color: #16a34a; }
+        .status-fail { background: #fef2f2; color: #dc2626; }
+        .status-unknown { background: #f8fafc; color: #94a3b8; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
+        .modal.open { display: flex; }
+        .modal-box { background: white; border-radius: 16px; padding: 24px; width: 480px; max-width: 95vw; }
+        .modal-title { font-size: 16px; font-weight: 600; margin-bottom: 20px; }
+        .form-group { margin-bottom: 14px; }
+        label { font-size: 12px; color: #555; font-weight: 500; display: block; margin-bottom: 6px; }
+        input[type=text], input[type=email], input[type=number] { width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; }
+        .checkbox-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 13px; }
+        .section-sep { font-size: 11px; font-weight: 600; color: #aaa; text-transform: uppercase; letter-spacing: .05em; margin: 16px 0 10px; }
+        .modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+        .alert { padding: 12px 16px; border-radius: 8px; font-size: 13px; margin-bottom: 16px; }
+        .alert-warning { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+        .loading { color: #888; font-size: 13px; padding: 20px; text-align: center; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>⚡ PBI Monitor</h1>
+    <div id="tokenBadge" class="badge badge-red">Bağlı değil</div>
+</div>
+
+<div class="container">
+
+    <div id="tokenUyari" class="alert alert-warning" style="display:none">
+        ⚠️ Power BI bağlantısı yok. Lütfen <strong>Ayarlar</strong> bölümünden token alın.
+    </div>
+
+    <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px">
+            <div class="card-title" style="margin:0">Dataset Listesi</div>
+            <div style="display:flex; gap:8px">
+                <button class="btn btn-secondary" onclick="kontrol()">🔍 Şimdi Kontrol Et</button>
+                <button class="btn btn-primary" onclick="datasetleriYukle()">🔄 Yenile</button>
+            </div>
+        </div>
+        <div id="datasetListesi" class="loading">Yükleniyor...</div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">Genel Ayarlar</div>
+        <div class="form-group">
+            <label>WhatsApp Phone Number ID</label>
+            <input type="text" id="phoneNumberId" placeholder="123456789">
+        </div>
+        <div class="form-group">
+            <label>WhatsApp Access Token</label>
+            <input type="text" id="waToken" placeholder="EAAxxxxx...">
+        </div>
+        <div class="form-group">
+            <label>SMTP Host</label>
+            <input type="text" id="smtpHost" placeholder="smtp.gmail.com">
+        </div>
+        <div class="form-group">
+            <label>SMTP Port</label>
+            <input type="number" id="smtpPort" placeholder="587">
+        </div>
+        <div class="form-group">
+            <label>SMTP Kullanıcı</label>
+            <input type="email" id="smtpUser" placeholder="sen@gmail.com">
+        </div>
+        <div class="form-group">
+            <label>SMTP Şifre</label>
+            <input type="text" id="smtpPass" placeholder="uygulama şifresi">
+        </div>
+        <button class="btn btn-primary" onclick="genelAyarlariKaydet()">Kaydet</button>
+    </div>
+
+</div>
+
+<!-- Dataset Ayar Modal -->
+<div class="modal" id="ayarModal">
+    <div class="modal-box">
+        <div class="modal-title" id="modalBaslik">Dataset Ayarları</div>
+
+        <div class="section-sep">Hata Durumunda Bildir</div>
+        <div class="checkbox-row">
+            <input type="checkbox" id="hataWhatsapp">
+            <label for="hataWhatsapp">WhatsApp ile bildir</label>
+        </div>
+        <div class="checkbox-row">
+            <input type="checkbox" id="hataMail">
+            <label for="hataMail">Email ile bildir</label>
+        </div>
+
+        <div class="section-sep">Başarılı Durumda</div>
+        <div class="checkbox-row">
+            <input type="checkbox" id="basariliMail">
+            <label for="basariliMail">Email ile rapor gönder</label>
+        </div>
+
+        <div class="section-sep">Alıcı Bilgileri</div>
+        <div class="form-group">
+            <label>WhatsApp Numarası (90 ile başlat)</label>
+            <input type="text" id="aliciWhatsapp" placeholder="905xxxxxxxxx">
+        </div>
+        <div class="form-group">
+            <label>Email Adresi</label>
+            <input type="email" id="aliciMail" placeholder="musteri@firma.com">
+        </div>
+
+        <div class="section-sep">Performans</div>
+        <div class="form-group">
+            <label>Normal refresh süresi (saniye) — bu süreyi aşarsa uyarı</label>
+            <input type="number" id="normalSure" placeholder="300">
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="modalKapat()">İptal</button>
+            <button class="btn btn-primary" onclick="ayarlariKaydet()">Kaydet</button>
+        </div>
+    </div>
+</div>
+
+<script>
+let aktifDatasetId = null;
+
+async function tokenDurumKontrol() {
+    const res = await fetch("/api/token_durum");
+    const data = await res.json();
+    const badge = document.getElementById("tokenBadge");
+    const uyari = document.getElementById("tokenUyari");
+    if (data.gecerli) {
+        badge.className = "badge badge-green";
+        badge.textContent = "Bağlı";
+        uyari.style.display = "none";
+    } else {
+        badge.className = "badge badge-red";
+        badge.textContent = "Bağlı değil";
+        uyari.style.display = "block";
+    }
+}
+
+async function datasetleriYukle() {
+    document.getElementById("datasetListesi").innerHTML = '<div class="loading">Yükleniyor...</div>';
+    const res = await fetch("/api/datasets");
+    if (res.status === 401) {
+        document.getElementById("datasetListesi").innerHTML = '<div class="loading">Token gerekli. Lütfen bağlantı kurun.</div>';
+        return;
+    }
+    const datasets = await res.json();
+    if (datasets.length === 0) {
+        document.getElementById("datasetListesi").innerHTML = '<div class="loading">Import mode dataset bulunamadı.</div>';
+        return;
+    }
+
+    let html = '<table><thead><tr><th>Workspace</th><th>Dataset</th><th>Son Refresh</th><th>Durum</th><th>Süre</th><th>Ayarlar</th></tr></thead><tbody>';
+    for (const ds of datasets) {
+        const durum = ds.son_durum === "Completed" 
+            ? '<span class="status status-ok">✅ Başarılı</span>'
+            : ds.son_durum === "Failed"
+            ? '<span class="status status-fail">🚨 Hata</span>'
+            : '<span class="status status-unknown">— Bilinmiyor</span>';
+        
+        const sure = ds.sure > 0 ? `${ds.sure} sn` : "—";
+        
+        html += `<tr>
+            <td>${ds.workspace}</td>
+            <td><strong>${ds.name}</strong></td>
+            <td>${ds.son_refresh.replace("T", " ").replace(".000Z", "").replace(/\.\d+Z/, "")}</td>
+            <td>${durum}</td>
+            <td>${sure}</td>
+            <td><button class="btn btn-secondary" onclick="modalAc('${ds.id}', '${ds.name}', ${JSON.stringify(ds.ayarlar || {}).replace(/'/g, "\\'")})">⚙️ Ayarla</button></td>
+        </tr>`;
+    }
+    html += '</tbody></table>';
+    document.getElementById("datasetListesi").innerHTML = html;
+}
+
+async function kontrol() {
+    document.getElementById("datasetListesi").innerHTML = '<div class="loading">Kontrol ediliyor...</div>';
+    const res = await fetch("/api/kontrol");
+    const sonuclar = await res.json();
+    
+    let html = '<table><thead><tr><th>Dataset</th><th>Durum</th><th>Süre</th><th>Alarm</th></tr></thead><tbody>';
+    for (const s of sonuclar) {
+        const durum = s.durum === "Completed"
+            ? '<span class="status status-ok">✅ Başarılı</span>'
+            : s.durum === "Failed"
+            ? '<span class="status status-fail">🚨 Hata</span>'
+            : '<span class="status status-unknown">—</span>';
+        
+        const alarm = s.alarm.length > 0 ? s.alarm.join(", ") : "—";
+        html += `<tr><td><strong>${s.name}</strong></td><td>${durum}</td><td>${s.sure} sn</td><td>${alarm}</td></tr>`;
+    }
+    html += '</tbody></table>';
+    document.getElementById("datasetListesi").innerHTML = html;
+}
+
+function modalAc(id, isim, ayarlar) {
+    aktifDatasetId = id;
+    document.getElementById("modalBaslik").textContent = isim;
+    document.getElementById("hataWhatsapp").checked = ayarlar.hata_whatsapp || false;
+    document.getElementById("hataMail").checked = ayarlar.hata_mail || false;
+    document.getElementById("basariliMail").checked = ayarlar.basarili_mail || false;
+    document.getElementById("aliciWhatsapp").value = ayarlar.alici_whatsapp || "";
+    document.getElementById("aliciMail").value = ayarlar.alici_mail || "";
+    document.getElementById("normalSure").value = ayarlar.normal_sure || 300;
+    document.getElementById("ayarModal").classList.add("open");
+}
+
+function modalKapat() {
+    document.getElementById("ayarModal").classList.remove("open");
+}
+
+async function ayarlariKaydet() {
+    const data = {
+        dataset_id: aktifDatasetId,
+        hata_whatsapp: document.getElementById("hataWhatsapp").checked,
+        hata_mail: document.getElementById("hataMail").checked,
+        basarili_mail: document.getElementById("basariliMail").checked,
+        alici_whatsapp: document.getElementById("aliciWhatsapp").value,
+        alici_mail: document.getElementById("aliciMail").value,
+        normal_sure: parseInt(document.getElementById("normalSure").value) || 300
+    };
+    await fetch("/api/ayarlar", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(data) });
+    modalKapat();
+    alert("Ayarlar kaydedildi!");
+}
+
+async function genelAyarlariKaydet() {
+    const data = {
+        phone_number_id: document.getElementById("phoneNumberId").value,
+        wa_token: document.getElementById("waToken").value,
+        smtp: {
+            host: document.getElementById("smtpHost").value,
+            port: parseInt(document.getElementById("smtpPort").value) || 587,
+            user: document.getElementById("smtpUser").value,
+            password: document.getElementById("smtpPass").value
+        }
+    };
+    await fetch("/api/genel_ayarlar", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(data) });
+    alert("Genel ayarlar kaydedildi!");
+}
+
+tokenDurumKontrol();
+datasetleriYukle();
+</script>
+
+</body>
+</html>
