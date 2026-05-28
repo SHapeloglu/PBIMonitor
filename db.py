@@ -3,17 +3,17 @@ import mysql.connector
 DB_CONFIG = {
     "host": "localhost",
     "user": "olapcomt_PowerBIMonitor",
-    "password": "olapcomt_PowerBIMonitor",
-    "database": "olapcomt_PowerBIMonitor"
+    "password": "DB_SIFREN",
+    "database": "olapcomt_PowerBIMonitor",
+    "charset": "utf8mb4",
+    "collation": "utf8mb4_unicode_ci"
 }
 
 def get_db():
-    return mysql.connector.connect(**DB_CONFIG)
-
-def init_db():
-    db = get_db()
-    cursor = db.cursor()
-    cursor.execute("SELECT 1")
+    conn = mysql.connector.connect(**DB_CONFIG)
+    cursor = conn.cursor()
+    cursor.execute("SET NAMES utf8mb4")
+    cursor.execute("SET CHARACTER SET utf8mb4")
+    cursor.execute("SET character_set_connection=utf8mb4")
     cursor.close()
-    db.close()
-    print("DB bağlantısı başarılı!")
+    return conn
