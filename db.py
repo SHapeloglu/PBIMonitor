@@ -5,8 +5,7 @@ DB_CONFIG = {
     "user": "olapcomt_PowerBIMonitor",
     "password": "DB_SIFREN",
     "database": "olapcomt_PowerBIMonitor",
-    "charset": "utf8mb4",
-    "collation": "utf8mb4_unicode_ci"
+    "charset": "utf8mb4"
 }
 
 def get_db():
