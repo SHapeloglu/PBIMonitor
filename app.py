@@ -53,7 +53,7 @@ def api_datasets():
     token = token_yukle(session['user_id'])
     
     db = get_db()
-    cursor = db.cursor(dictionary=True)
+    cursor = db.cursor()
     
     datasets = datasetleri_getir(token)
     
@@ -78,7 +78,7 @@ def ayarlar_kaydet():
     pbi_dataset_id = data.get('dataset_id')
     
     db = get_db()
-    cursor = db.cursor(dictionary=True)
+    cursor = db.cursor()
     
     cursor.execute("""
         SELECT id FROM datasets 
@@ -142,7 +142,7 @@ def manuel_kontrol():
 @giris_gerekli
 def alarm_log():
     db = get_db()
-    cursor = db.cursor(dictionary=True)
+    cursor = db.cursor()
     cursor.execute("""
         SELECT al.*, d.name as dataset_name 
         FROM alarm_log al

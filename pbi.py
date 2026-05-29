@@ -8,7 +8,7 @@ CLIENT_ID = "14d82eec-204b-4c2f-b7e8-296a70dab67e"
 
 def token_gecerli_mi(user_id):
     db = get_db()
-    cursor = db.cursor(dictionary=True)
+    cursor = db.cursor()
     cursor.execute("SELECT * FROM pbi_connections WHERE user_id = %s", (user_id,))
     conn = cursor.fetchone()
     cursor.close()
@@ -20,7 +20,7 @@ def token_gecerli_mi(user_id):
 
 def token_yukle(user_id):
     db = get_db()
-    cursor = db.cursor(dictionary=True)
+    cursor = db.cursor()
     cursor.execute("SELECT token FROM pbi_connections WHERE user_id = %s", (user_id,))
     conn = cursor.fetchone()
     cursor.close()

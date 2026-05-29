@@ -55,7 +55,7 @@ def alarm_log_kaydet(dataset_id, durum, mesaj, kanal):
 
 def dataset_kontrol(user_id, datasets):
     db = get_db()
-    cursor = db.cursor(dictionary=True)
+    cursor = db.cursor()
     
     # Kullanıcının SMTP ayarlarını çek
     cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
