@@ -3,7 +3,7 @@ import mysql.connector
 DB_CONFIG = {
     "host": "localhost",
     "user": "olapcomt_PowerBIMonitor",
-    "password": "DB_SIFREN",
+    "password": "olapcomt_PowerBIMonitor",
     "database": "olapcomt_PowerBIMonitor",
     "charset": "utf8mb4"
 }
