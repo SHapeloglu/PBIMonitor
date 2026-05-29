@@ -1,18 +1,13 @@
-import mysql.connector
+import pymysql
 
 DB_CONFIG = {
     "host": "localhost",
     "user": "olapcomt_PowerBIMonitor",
-    "password": "BirNisan82",
+    "password": "SIFREN",
     "database": "olapcomt_PowerBIMonitor",
-    "charset": "utf8mb4"
+    "charset": "utf8mb4",
+    "cursorclass": pymysql.cursors.DictCursor
 }
 
 def get_db():
-    conn = mysql.connector.connect(**DB_CONFIG)
-    cursor = conn.cursor()
-    cursor.execute("SET NAMES utf8mb4")
-    cursor.execute("SET CHARACTER SET utf8mb4")
-    cursor.execute("SET character_set_connection=utf8mb4")
-    cursor.close()
-    return conn
+    return pymysql.connect(**DB_CONFIG)
