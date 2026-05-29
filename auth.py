@@ -11,7 +11,8 @@ def login():
         password = request.form.get('password')
         
         db = get_db()
-        cursor = db.cursor(dictionary=True)
+        cursor = db.cursor()
+
         cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
         user = cursor.fetchone()
         cursor.close()
