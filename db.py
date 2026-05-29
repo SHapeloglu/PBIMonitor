@@ -3,7 +3,7 @@ import pymysql
 DB_CONFIG = {
     "host": "localhost",
     "user": "olapcomt_PowerBIMonitor",
-    "password": "SIFREN",
+    "password": "BirNisan82",
     "database": "olapcomt_PowerBIMonitor",
     "charset": "utf8mb4",
     "cursorclass": pymysql.cursors.DictCursor
