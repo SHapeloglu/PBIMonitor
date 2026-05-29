@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session
 from werkzeug.security import generate_password_hash, check_password_hash
 from db import get_db
-
+import pymysql.cursors
 auth = Blueprint('auth', __name__)
 
 @auth.route('/login', methods=['GET', 'POST'])
@@ -11,7 +11,7 @@ def login():
         password = request.form.get('password')
         
         db = get_db()
-        cursor = db.cursor()
+        cursor = db.cursor(pymysql.cursors.DictCursor)
 
         cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
         user = cursor.fetchone()
@@ -34,7 +34,7 @@ def register():
         password = request.form.get('password')
         
         db = get_db()
-        cursor = db.cursor()
+        cursor = db.cursor(pymysql.cursors.DictCursor)
         try:
             cursor.execute(
                 "INSERT INTO users (email, password) VALUES (%s, %s)",

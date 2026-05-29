@@ -1,7 +1,7 @@
 import requests
 from datetime import datetime, timezone, timedelta
 from db import get_db
-
+import pymysql.cursors
 def son_24_saat_mi(tarih_str):
     try:
         fmt = "%Y-%m-%dT%H:%M:%S.%fZ"
@@ -44,7 +44,7 @@ def mail_gonder(konu, mesaj, alici, smtp_config):
 
 def alarm_log_kaydet(dataset_id, durum, mesaj, kanal):
     db = get_db()
-    cursor = db.cursor()
+    cursor = db.cursor(pymysql.cursors.DictCursor)
     cursor.execute(
         "INSERT INTO alarm_log (dataset_id, durum, mesaj, kanal) VALUES (%s, %s, %s, %s)",
         (dataset_id, durum, mesaj, kanal)
@@ -55,7 +55,7 @@ def alarm_log_kaydet(dataset_id, durum, mesaj, kanal):
 
 def dataset_kontrol(user_id, datasets):
     db = get_db()
-    cursor = db.cursor()
+    cursor = db.cursor(pymysql.cursors.DictCursor)
     
     # Kullanıcının SMTP ayarlarını çek
     cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))

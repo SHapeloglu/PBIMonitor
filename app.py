@@ -4,7 +4,7 @@ from db import get_db
 from pbi import token_gecerli_mi, token_yukle, token_kaydet, device_code_baslat, device_code_tamamla, datasetleri_getir
 from monitor import dataset_kontrol
 import json
-
+import pymysql.cursors
 app = Flask(__name__)
 app.secret_key = "pbimonitor-gizli-anahtar-2026"
 
@@ -53,7 +53,7 @@ def api_datasets():
     token = token_yukle(session['user_id'])
     
     db = get_db()
-    cursor = db.cursor()
+    cursor = db.cursor(pymysql.cursors.DictCursor)
     
     datasets = datasetleri_getir(token)
     
@@ -78,7 +78,7 @@ def ayarlar_kaydet():
     pbi_dataset_id = data.get('dataset_id')
     
     db = get_db()
-    cursor = db.cursor()
+    cursor = db.cursor(pymysql.cursors.DictCursor)
     
     cursor.execute("""
         SELECT id FROM datasets 
@@ -142,7 +142,7 @@ def manuel_kontrol():
 @giris_gerekli
 def alarm_log():
     db = get_db()
-    cursor = db.cursor()
+    cursor = db.cursor(pymysql.cursors.DictCursor)
     cursor.execute("""
         SELECT al.*, d.name as dataset_name 
         FROM alarm_log al

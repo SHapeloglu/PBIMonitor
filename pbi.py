@@ -2,13 +2,13 @@ import requests
 import json
 from datetime import datetime, timezone, timedelta
 from db import get_db
-
+import pymysql.cursors
 TENANT_ID = "860892ca-232a-44ea-8378-13160e9f1c27"
 CLIENT_ID = "14d82eec-204b-4c2f-b7e8-296a70dab67e"
 
 def token_gecerli_mi(user_id):
     db = get_db()
-    cursor = db.cursor()
+    cursor = db.cursor(pymysql.cursors.DictCursor)
     cursor.execute("SELECT * FROM pbi_connections WHERE user_id = %s", (user_id,))
     conn = cursor.fetchone()
     cursor.close()
@@ -20,7 +20,7 @@ def token_gecerli_mi(user_id):
 
 def token_yukle(user_id):
     db = get_db()
-    cursor = db.cursor()
+    cursor = db.cursor(pymysql.cursors.DictCursor)
     cursor.execute("SELECT token FROM pbi_connections WHERE user_id = %s", (user_id,))
     conn = cursor.fetchone()
     cursor.close()
@@ -30,7 +30,7 @@ def token_yukle(user_id):
 def token_kaydet(user_id, access_token, expires_in):
     expires_at = datetime.now(timezone.utc).timestamp() + expires_in
     db = get_db()
-    cursor = db.cursor()
+    cursor = db.cursor(pymysql.cursors.DictCursor)
     cursor.execute("""
         INSERT INTO pbi_connections (user_id, tenant_id, token, token_expires_at)
         VALUES (%s, %s, %s, %s)
