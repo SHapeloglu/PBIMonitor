@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}- Gateway{% endblock %}
+{% block topbar_title %}Gateway Monitoring{% endblock %}
+
+{% block content %}
+
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">Gateway ve Veri Kaynagi Durumu</div>
+        <div style="display:flex;gap:8px">
+            <button class="btn btn-secondary btn-sm" onclick="gatewayleriYukle()">Yenile</button>
+            <button class="btn btn-primary btn-sm" onclick="gatewayKontrolEt()">Simdi Kontrol Et</button>
+        </div>
+    </div>
+    <div id="gatewayUyari"></div>
+    <div id="gatewayIcerik">
+        <div class="loading">Yukleniyor...</div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">Son 50 Gateway Alarm Kaydi</div>
+    </div>
+    <div id="gatewayLogIcerik">
+        <div class="loading">Yukleniyor...</div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const durumStil = {
+    'Online': 'status-ok',
+    'Offline': 'status-fail',
+    'Bilinmiyor': 'status-unknown'
+};
+
+async function gatewayleriYukle() {
+    const el = document.getElementById('gatewayIcerik');
+    const uyariEl = document.getElementById('gatewayUyari');
+    uyariEl.innerHTML = '';
+    el.innerHTML = '<div class="loading">Yukleniyor...</div>';
+
+    const res = await fetch('/api/gateways');
+    if (res.status === 401) {
+        el.innerHTML = '<div class="loading">Once Power BI baglantisi yapmaniz gerekiyor (Dashboard sayfasindan).</div>';
+        return;
+    }
+    const gateways = await res.json();
+
+    if (!gateways.length) {
+        el.innerHTML = '<div class="loading">Erisebildiginiz bir gateway bulunamadi. Gateway.Read.All izni yeni eklendi; eger gateway kullaniyorsaniz Ayarlar sayfasindan Power BI baglantisini sifirlayip yeniden baglanmayi deneyin.</div>';
+        return;
+    }
+
+    el.innerHTML = gateways.map(gw => `
+        <div style="margin-bottom:20px">
+            <div style="font-weight:600;font-size:13px;margin-bottom:8px;display:flex;align-items:center;gap:8px">
+                <span>🌐</span> ${gw.name}
+                <span style="font-size:11px;font-weight:400;color:var(--pbi-text-secondary)">${gw.type || ''}</span>
+            </div>
+            ${gw.datasources.length ? `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Veri Kaynagi</th>
+                            <th>Tip</th>
+                            <th>Durum</th>
+                            <th>Hata</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${gw.datasources.map(ds => `
+                            <tr>
+                                <td>${ds.name}</td>
+                                <td style="font-size:12px;color:var(--pbi-text-secondary)">${ds.type || '-'}</td>
+                                <td><span class="status ${durumStil[ds.durum] || 'status-unknown'}">${ds.durum}</span></td>
+                                <td style="font-size:12px;color:var(--pbi-text-secondary);max-width:300px">${ds.hata_mesaji || '-'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            ` : '<div style="font-size:12px;color:var(--pbi-text-secondary);padding:8px 0">Bu gateway icin veri kaynagi bulunamadi.</div>'}
+        </div>
+    `).join('');
+}
+
+async function gatewayKontrolEt() {
+    const uyariEl = document.getElementById('gatewayUyari');
+    uyariEl.innerHTML = '<div class="alert alert-warning">Kontrol ediliyor, offline kaynaklar icin alarm gonderiliyor...</div>';
+    const res = await fetch('/api/gateway_kontrol');
+    if (res.status === 401) {
+        uyariEl.innerHTML = '<div class="alert alert-error">Once Power BI baglantisi yapmaniz gerekiyor.</div>';
+        return;
+    }
+    const sonuclar = await res.json();
+    const offline = sonuclar.filter(s => s.durum === 'Offline').length;
+    uyariEl.innerHTML = offline
+        ? `<div class="alert alert-error">${offline} veri kaynagi offline. Alarm gonderildi (ayarli ise) ve kaydedildi.</div>`
+        : `<div class="alert alert-success">Tum veri kaynaklari cevrimici.</div>`;
+    gatewayleriYukle();
+    gatewayLogYukle();
+}
+
+async function gatewayLogYukle() {
+    const res = await fetch('/api/gateway_log');
+    const logs = await res.json();
+    const el = document.getElementById('gatewayLogIcerik');
+
+    if (!logs.length) {
+        el.innerHTML = '<div class="loading">Henuz gateway alarm kaydi yok.</div>';
+        return;
+    }
+
+    el.innerHTML = `
+        <table>
+            <thead>
+                <tr>
+                    <th>Zaman</th>
+                    <th>Gateway</th>
+                    <th>Veri Kaynagi</th>
+                    <th>Durum</th>
+                    <th>Mesaj</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${logs.map(l => `
+                    <tr>
+                        <td style="white-space:nowrap;font-size:12px;color:var(--pbi-text-secondary)">${l.created_at}</td>
+                        <td>${l.gateway_name || '-'}</td>
+                        <td>${l.datasource_name || '-'}</td>
+                        <td><span class="badge badge-red">${l.durum}</span></td>
+                        <td style="font-size:12px;color:var(--pbi-text-secondary);max-width:300px;white-space:pre-wrap">${l.mesaj}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+}
+
+gatewayleriYukle();
+gatewayLogYukle();
+</script>
+{% endblock %}

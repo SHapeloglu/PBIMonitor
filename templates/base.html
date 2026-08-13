@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PBI Monitor {% block title %}{% endblock %}</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        :root {
+            --pbi-yellow: #F2C811;
+            --pbi-dark: #1A1A2E;
+            --pbi-sidebar: #252540;
+            --pbi-card: #2D2D4E;
+            --pbi-border: #3D3D6B;
+            --pbi-text: #FFFFFF;
+            --pbi-text-secondary: #A0A0C0;
+            --pbi-success: #00B294;
+            --pbi-error: #E81123;
+            --pbi-warning: #FF8C00;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--pbi-dark);
+            color: var(--pbi-text);
+            min-height: 100vh;
+            display: flex;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 240px;
+            background: var(--pbi-sidebar);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            border-right: 1px solid var(--pbi-border);
+        }
+
+        .sidebar-logo {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--pbi-border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sidebar-logo-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--pbi-yellow);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .sidebar-logo-text {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--pbi-text);
+        }
+
+        .sidebar-logo-sub {
+            font-size: 10px;
+            color: var(--pbi-text-secondary);
+        }
+
+        .sidebar-nav {
+            padding: 16px 0;
+            flex: 1;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 24px;
+            color: var(--pbi-text-secondary);
+            text-decoration: none;
+            font-size: 13px;
+            transition: all .15s;
+            cursor: pointer;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: rgba(242, 200, 17, 0.1);
+            color: var(--pbi-yellow);
+            border-left: 3px solid var(--pbi-yellow);
+        }
+
+        .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+
+        .sidebar-footer {
+            padding: 16px 24px;
+            border-top: 1px solid var(--pbi-border);
+            font-size: 12px;
+            color: var(--pbi-text-secondary);
+        }
+
+        /* Main */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .topbar {
+            background: var(--pbi-sidebar);
+            border-bottom: 1px solid var(--pbi-border);
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .topbar-title { font-size: 15px; font-weight: 600; }
+
+        .topbar-right { display: flex; align-items: center; gap: 12px; }
+
+        .badge {
+            padding: 4px 10px;
+            border-radius: 99px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .badge-green { background: rgba(0,178,148,0.2); color: var(--pbi-success); }
+        .badge-red { background: rgba(232,17,35,0.2); color: var(--pbi-error); }
+        .badge-yellow { background: rgba(242,200,17,0.2); color: var(--pbi-yellow); }
+
+        .content { padding: 24px; overflow-y: auto; flex: 1; }
+
+        /* Cards */
+        .card {
+            background: var(--pbi-card);
+            border: 1px solid var(--pbi-border);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .card-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--pbi-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: .05em;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 8px 16px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: opacity .15s;
+        }
+
+        .btn:hover { opacity: 0.85; }
+        .btn-primary { background: var(--pbi-yellow); color: #1A1A2E; }
+        .btn-secondary { background: var(--pbi-border); color: var(--pbi-text); }
+        .btn-danger { background: var(--pbi-error); color: white; }
+        .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+        /* Table */
+        table { width: 100%; border-collapse: collapse; }
+        th {
+            text-align: left;
+            font-size: 11px;
+            color: var(--pbi-text-secondary);
+            font-weight: 500;
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--pbi-border);
+            text-transform: uppercase;
+            letter-spacing: .04em;
+        }
+        td { padding: 12px; font-size: 13px; border-bottom: 1px solid rgba(61,61,107,0.5); }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: rgba(255,255,255,0.02); }
+
+        /* Status */
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 10px;
+            border-radius: 99px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .status-ok { background: rgba(0,178,148,0.15); color: var(--pbi-success); }
+        .status-fail { background: rgba(232,17,35,0.15); color: var(--pbi-error); }
+        .status-unknown { background: rgba(160,160,192,0.15); color: var(--pbi-text-secondary); }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.open { display: flex; }
+        .modal-box {
+            background: var(--pbi-card);
+            border: 1px solid var(--pbi-border);
+            border-radius: 12px;
+            padding: 24px;
+            width: 500px;
+            max-width: 95vw;
+        }
+        .modal-title {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--pbi-border);
+        }
+        .modal-footer {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid var(--pbi-border);
+        }
+
+        /* Form */
+        .form-group { margin-bottom: 14px; }
+        label { font-size: 12px; color: var(--pbi-text-secondary); font-weight: 500; display: block; margin-bottom: 6px; }
+        input[type=text], input[type=email], input[type=number], input[type=password] {
+            width: 100%;
+            padding: 8px 12px;
+            background: var(--pbi-dark);
+            border: 1px solid var(--pbi-border);
+            border-radius: 4px;
+            font-size: 13px;
+            color: var(--pbi-text);
+        }
+        input:focus { outline: none; border-color: var(--pbi-yellow); }
+        .section-sep {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--pbi-yellow);
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            margin: 16px 0 10px;
+        }
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-size: 13px;
+            color: var(--pbi-text);
+        }
+
+        /* Alert */
+        .alert {
+            padding: 12px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            margin-bottom: 16px;
+        }
+        .alert-warning { background: rgba(255,140,0,0.15); color: var(--pbi-warning); border: 1px solid rgba(255,140,0,0.3); }
+        .alert-success { background: rgba(0,178,148,0.15); color: var(--pbi-success); border: 1px solid rgba(0,178,148,0.3); }
+        .alert-error { background: rgba(232,17,35,0.15); color: var(--pbi-error); border: 1px solid rgba(232,17,35,0.3); }
+
+        /* Loading */
+        .loading { color: var(--pbi-text-secondary); font-size: 13px; padding: 32px; text-align: center; }
+
+        /* Stats */
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+        .stat-card {
+            background: var(--pbi-card);
+            border: 1px solid var(--pbi-border);
+            border-radius: 8px;
+            padding: 16px 20px;
+        }
+        .stat-label { font-size: 11px; color: var(--pbi-text-secondary); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 8px; }
+        .stat-value { font-size: 28px; font-weight: 600; color: var(--pbi-text); }
+        .stat-sub { font-size: 11px; color: var(--pbi-text-secondary); margin-top: 4px; }
+
+        /* PBI Connect */
+        .connect-box {
+            background: rgba(242,200,17,0.05);
+            border: 1px solid rgba(242,200,17,0.3);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+        }
+        .connect-code {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--pbi-yellow);
+            letter-spacing: .1em;
+            margin: 12px 0;
+        }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <div class="sidebar-logo">
+        <div class="sidebar-logo-icon">⚡</div>
+        <div>
+            <div class="sidebar-logo-text">PBI Monitor</div>
+            <div class="sidebar-logo-sub">Power BI İzleme</div>
+        </div>
+    </div>
+    <nav class="sidebar-nav">
+        <a href="/" class="nav-item {% if request.path == '/' %}active{% endif %}">
+            <span class="nav-icon">📊</span> Dashboard
+        </a>
+        <a href="/alarm-log" class="nav-item {% if request.path == '/alarm-log' %}active{% endif %}">
+            <span class="nav-icon">🔔</span> Alarm Geçmişi
+        </a>
+        <a href="/gateway" class="nav-item {% if request.path == '/gateway' %}active{% endif %}">
+            <span class="nav-icon">🌐</span> Gateway
+        </a>
+        <a href="/ayarlar" class="nav-item {% if request.path == '/ayarlar' %}active{% endif %}">
+            <span class="nav-icon">⚙️</span> Ayarlar
+        </a>
+    </nav>
+    <div class="sidebar-footer">
+        {{ email }}<br>
+        <a href="/logout" style="color: var(--pbi-error); text-decoration: none; font-size: 11px;">Çıkış yap</a>
+    </div>
+</div>
+
+<div class="main">
+    <div class="topbar">
+        <div class="topbar-title">{% block topbar_title %}{% endblock %}</div>
+        <div class="topbar-right">
+            <div id="pbiDurum" class="badge badge-red">PBI Bağlı değil</div>
+        </div>
+    </div>
+    <div class="content">
+        {% block content %}{% endblock %}
+    </div>
+</div>
+
+<script>
+async function pbiDurumKontrol() {
+    const res = await fetch('/api/pbi/durum');
+    const data = await res.json();
+    const el = document.getElementById('pbiDurum');
+    if (data.bagli) {
+        el.className = 'badge badge-green';
+        el.textContent = '✓ PBI Bağlı';
+    } else {
+        el.className = 'badge badge-red';
+        el.textContent = 'PBI Bağlı değil';
+    }
+}
+pbiDurumKontrol();
+</script>
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

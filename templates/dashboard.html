@@ -1,0 +1,374 @@
+{% extends "base.html" %}
+
+{% block title %}— Dashboard{% endblock %}
+{% block topbar_title %}Dashboard{% endblock %}
+
+{% block content %}
+
+<div id="pbiUyari" class="alert alert-warning" style="display:none">
+    ⚠️ Power BI bağlantısı yok. 
+    <a href="#" onclick="pbiBaslat()" style="color: inherit; font-weight: 600;">Şimdi bağlan →</a>
+</div>
+
+<!-- Stats -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-label">Toplam Dataset</div>
+        <div class="stat-value" id="statToplamDataset">—</div>
+        <div class="stat-sub">Import mode</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Başarılı</div>
+        <div class="stat-value" style="color: var(--pbi-success)" id="statBasarili">—</div>
+        <div class="stat-sub">Son 24 saat</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Hatalı</div>
+        <div class="stat-value" style="color: var(--pbi-error)" id="statHatali">—</div>
+        <div class="stat-sub">Son 24 saat</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Ort. Süre</div>
+        <div class="stat-value" id="statOrtSure">—</div>
+        <div class="stat-sub">Saniye</div>
+    </div>
+</div>
+
+<!-- Dataset Listesi -->
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">Dataset Listesi</div>
+        <div style="display:flex; gap:8px">
+            <button class="btn btn-secondary btn-sm" onclick="kontrol()">🔍 Kontrol Et</button>
+            <button class="btn btn-primary btn-sm" onclick="datasetleriYukle()">🔄 Yenile</button>
+        </div>
+    </div>
+    <div id="datasetListesi" class="loading">Yükleniyor...</div>
+</div>
+
+<!-- PBI Bağlantı Modal -->
+<div class="modal" id="pbiModal">
+    <div class="modal-box">
+        <div class="modal-title">⚡ Power BI Bağlantısı</div>
+        <div id="pbiModalContent">
+            <p style="font-size:13px; color: var(--pbi-text-secondary); margin-bottom:16px">
+                Power BI hesabınızı bağlamak için aşağıdaki adımları takip edin.
+            </p>
+            <button class="btn btn-primary" onclick="pbiKodAl()" style="width:100%">
+                Bağlantı Kodu Al
+            </button>
+        </div>
+            <button class="btn btn-secondary" onclick="modalKapat('pbiModal')">Kapat</button>
+        </div>
+    </div>
+</div>
+
+<!-- Dataset Ayar Modal -->
+<div class="modal" id="ayarModal">
+    <div class="modal-box">
+        <div class="modal-title" id="modalBaslik">Dataset Ayarları</div>
+
+        <div class="section-sep">Hata Durumunda Bildir</div>
+        <div class="checkbox-row">
+            <input type="checkbox" id="hataWhatsapp">
+            <label for="hataWhatsapp">WhatsApp ile bildir</label>
+        </div>
+        <div class="checkbox-row">
+            <input type="checkbox" id="hataMail">
+            <label for="hataMail">Email ile bildir</label>
+        </div>
+
+        <div class="section-sep">Başarılı Durumda</div>
+        <div class="checkbox-row">
+            <input type="checkbox" id="basariliMail">
+            <label for="basariliMail">Email ile rapor gönder</label>
+        </div>
+
+        <div class="section-sep">WhatsApp Ayarları</div>
+        <div class="form-group">
+            <label>Phone Number ID</label>
+            <input type="text" id="phoneNumberId" placeholder="Meta Developer'dan alınan ID">
+        </div>
+        <div class="form-group">
+            <label>Access Token</label>
+            <input type="text" id="waToken" placeholder="EAAxxxxx...">
+        </div>
+        <div class="form-group">
+            <label>Alıcı Numara (90 ile başlat)</label>
+            <input type="text" id="aliciWhatsapp" placeholder="905xxxxxxxxx">
+        </div>
+
+        <div class="section-sep">Email Ayarları</div>
+        <div class="form-group">
+            <label>Alıcı Email</label>
+            <input type="email" id="aliciMail" placeholder="musteri@firma.com">
+        </div>
+
+        <div class="section-sep">Performans</div>
+        <div class="form-group">
+            <label>Normal refresh süresi (saniye) — bu süreyi aşarsa uyarı</label>
+            <input type="number" id="normalSure" placeholder="300">
+        </div>
+        <div class="form-group">
+            <label>Ardışık başarısızlık eşiği — kaç kez üst üste hata alınca kritik alarm gönderilsin</label>
+            <input type="number" id="ustUsteHataEsik" placeholder="3">
+        </div>
+        <div class="form-group">
+            <label>Kaçırılan refresh süresi (saat) — bu kadar saat içinde refresh olmazsa alarm</label>
+            <input type="number" id="beklenenRefreshSaat" placeholder="24">
+        </div>
+
+                <div class="form-group">
+            <label>Süre anomalisi eşiği (%) — son 10 refresh ortalamasının kaç katını aşarsa alarm (örn. 150 = %150)</label>
+            <input type="number" id="sureSapmaYuzdesi" placeholder="150">
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="modalKapat('ayarModal')">İptal</button>
+            <button class="btn btn-primary" onclick="ayarlariKaydet()">Kaydet</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+let aktifDataset = null;
+let deviceCode = null;
+let datasetMap = {};
+
+function modalKapat(id) {
+    document.getElementById(id).classList.remove('open');
+}
+
+async function pbiBaslat() {
+    document.getElementById('pbiModal').classList.add('open');
+}
+
+async function pbiKodAl() {
+    document.getElementById('pbiModalContent').innerHTML = '<div class="loading">Kod alınıyor...</div>';
+    const res = await fetch('/api/pbi/baglant_baslat');
+    const data = await res.json();
+    deviceCode = data.device_code;
+
+    document.getElementById('pbiModalContent').innerHTML = `
+        <div class="connect-box">
+            <p style="font-size:13px; color: var(--pbi-text-secondary)">
+                Şu adrese gidin ve aşağıdaki kodu girin:
+            </p>
+            <p style="font-size:13px; margin:8px 0">
+                <strong><a href="https://microsoft.com/devicelogin" target="_blank" style="color: var(--pbi-yellow)">
+                    microsoft.com/devicelogin
+                </a></strong>
+            </p>
+            <div class="connect-code">${data.user_code}</div>
+            <p style="font-size:12px; color: var(--pbi-text-secondary)">
+                Giriş yaptıktan sonra aşağıdaki butona tıklayın.
+            </p>
+        </div>
+        <button class="btn btn-primary" onclick="pbiTamamla()" style="width:100%; margin-top:16px">
+            ✓ Giriş Yaptım, Bağlan
+        </button>
+    `;
+}
+
+async function pbiTamamla() {
+    document.getElementById('pbiModalContent').innerHTML = '<div class="loading">Bağlanıyor...</div>';
+    const res = await fetch('/api/pbi/baglanti_tamamla', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({device_code: deviceCode})
+    });
+    const data = await res.json();
+    if (data.status === 'ok') {
+        document.getElementById('pbiModalContent').innerHTML = `
+            <div class="alert alert-success">✓ Power BI başarıyla bağlandı!</div>
+        `;
+        setTimeout(() => {
+            modalKapat('pbiModal');
+            pbiDurumKontrol();
+            datasetleriYukle();
+        }, 1500);
+    } else {
+        document.getElementById('pbiModalContent').innerHTML = `
+            <div class="alert alert-error">Bağlantı hatası: ${data.mesaj}</div>
+            <button class="btn btn-primary" onclick="pbiKodAl()" style="width:100%; margin-top:12px">Tekrar Dene</button>
+        `;
+    }
+}
+
+async function datasetleriYukle() {
+    document.getElementById('datasetListesi').innerHTML = '<div class="loading">Yükleniyor...</div>';
+    const res = await fetch('/api/datasets');
+    
+    if (res.status === 401) {
+        document.getElementById('pbiUyari').style.display = 'block';
+        document.getElementById('datasetListesi').innerHTML = '<div class="loading">Power BI bağlantısı gerekli.</div>';
+        return;
+    }
+
+    const datasets = await res.json();
+
+    // Ayarlar modali icin id -> dataset esleme (onclick icine JSON gommekten kacinmak icin)
+    datasetMap = {};
+    datasets.forEach(ds => { datasetMap[ds.id] = ds; });
+
+    // Stats hesapla
+    let basarili = 0, hatali = 0, toplamSure = 0;
+    datasets.forEach(ds => {
+        if (ds.son_durum === 'Completed') basarili++;
+        if (ds.son_durum === 'Failed') hatali++;
+        toplamSure += ds.sure || 0;
+    });
+
+    document.getElementById('statToplamDataset').textContent = datasets.length;
+    document.getElementById('statBasarili').textContent = basarili;
+    document.getElementById('statHatali').textContent = hatali;
+    document.getElementById('statOrtSure').textContent = datasets.length > 0 ? Math.round(toplamSure / datasets.length) : 0;
+
+    if (datasets.length === 0) {
+        document.getElementById('datasetListesi').innerHTML = '<div class="loading">Import mode dataset bulunamadı.</div>';
+        return;
+    }
+
+    let html = `<table>
+        <thead>
+            <tr>
+                <th>Workspace</th>
+                <th>Dataset</th>
+                <th>Son Refresh</th>
+                <th>Durum</th>
+                <th>Süre</th>
+                <th>Ayarlar</th>
+            </tr>
+        </thead>
+        <tbody>`;
+
+    for (const ds of datasets) {
+        const durum = ds.son_durum === 'Completed'
+            ? '<span class="status status-ok">✓ Başarılı</span>'
+            : ds.son_durum === 'Failed'
+            ? '<span class="status status-fail">✗ Hata</span>'
+            : '<span class="status status-unknown">— Bilinmiyor</span>';
+        const scheduleGoster = ds.schedule_enabled === false
+            ? '<span class="status status-fail">⏸ Duraklatıldı</span>'
+            : '';
+
+        const sure = ds.sure > 0 ? `${ds.sure} sn` : '—';
+        const tarih = ds.son_refresh !== 'bilinmiyor'
+            ? ds.son_refresh.replace('T', ' ').replace(/\.\d+Z/, '').replace('.28Z', '')
+            : '—';
+
+        html += `<tr>
+            <td style="color: var(--pbi-text-secondary)">${ds.workspace}</td>
+            <td><strong>${ds.name}</strong></td>
+            <td style="color: var(--pbi-text-secondary); font-size:12px">${tarih}</td>
+            <td>${durum} ${scheduleGoster}</td>
+            <td style="color: var(--pbi-text-secondary)">${sure}</td>
+            <td>
+                <button class="btn btn-secondary btn-sm" 
+                    onclick="modalAc('${ds.id}')">
+                    ⚙️
+                </button>
+            </td>
+        </tr>`;
+    }
+
+    html += '</tbody></table>';
+    document.getElementById('datasetListesi').innerHTML = html;
+}
+
+async function kontrol() {
+    document.getElementById('datasetListesi').innerHTML = '<div class="loading">Kontrol ediliyor...</div>';
+    const res = await fetch('/api/kontrol');
+    const sonuclar = await res.json();
+
+    let html = `<table>
+        <thead>
+            <tr><th>Dataset</th><th>Durum</th><th>Süre</th><th>Gönderilen Alarm</th></tr>
+        </thead>
+        <tbody>`;
+
+    for (const s of sonuclar) {
+        const durum = s.durum === 'Completed'
+            ? '<span class="status status-ok">✓ Başarılı</span>'
+            : s.durum === 'Failed'
+            ? '<span class="status status-fail">✗ Hata</span>'
+            : '<span class="status status-unknown">—</span>';
+
+        const alarm = s.alarm.length > 0
+            ? `<span style="color: var(--pbi-warning)">${s.alarm.join(', ')}</span>`
+            : '<span style="color: var(--pbi-text-secondary)">—</span>';
+
+        html += `<tr>
+            <td><strong>${s.name}</strong></td>
+            <td>${durum}</td>
+            <td style="color: var(--pbi-text-secondary)">${s.sure} sn</td>
+            <td>${alarm}</td>
+        </tr>`;
+    }
+
+    html += '</tbody></table>';
+    document.getElementById('datasetListesi').innerHTML = html;
+}
+
+function modalAc(id) {
+    const ds = datasetMap[id];
+    if (!ds) {
+        console.error('Dataset bulunamadi:', id);
+        return;
+    }
+    const ayarlar = ds.ayarlar || {};
+    aktifDataset = {id: ds.id, isim: ds.name, workspace: ds.workspace, workspaceId: ds.workspace_id || ''};
+    document.getElementById('modalBaslik').textContent = ds.name;
+    document.getElementById('hataWhatsapp').checked = ayarlar.hata_whatsapp || false;
+    document.getElementById('hataMail').checked = ayarlar.hata_mail || false;
+    document.getElementById('basariliMail').checked = ayarlar.basarili_mail || false;
+    document.getElementById('phoneNumberId').value = ayarlar.phone_number_id || '';
+    document.getElementById('waToken').value = ayarlar.wa_token || '';
+    document.getElementById('aliciWhatsapp').value = ayarlar.alici_whatsapp || '';
+    document.getElementById('aliciMail').value = ayarlar.alici_mail || '';
+    document.getElementById('sureSapmaYuzdesi').value = ayarlar.sure_sapma_yuzdesi || 150;
+    document.getElementById('normalSure').value = ayarlar.normal_sure || 300;
+    document.getElementById('ustUsteHataEsik').value = ayarlar.ust_uste_hata_esik || 3;
+    document.getElementById('beklenenRefreshSaat').value = ayarlar.beklenen_refresh_saat || 24;
+    document.getElementById('ayarModal').classList.add('open');
+}
+
+async function ayarlariKaydet() {
+    const data = {
+        dataset_id: aktifDataset.id,
+        name: aktifDataset.isim,
+        workspace: aktifDataset.workspace,
+        workspace_id: aktifDataset.workspaceId,
+        hata_whatsapp: document.getElementById('hataWhatsapp').checked,
+        hata_mail: document.getElementById('hataMail').checked,
+        basarili_mail: document.getElementById('basariliMail').checked,
+        phone_number_id: document.getElementById('phoneNumberId').value,
+        wa_token: document.getElementById('waToken').value,
+        alici_whatsapp: document.getElementById('aliciWhatsapp').value,
+        alici_mail: document.getElementById('aliciMail').value,
+        normal_sure: parseInt(document.getElementById('normalSure').value) || 300,
+        ust_uste_hata_esik: parseInt(document.getElementById('ustUsteHataEsik').value) || 3,
+        beklenen_refresh_saat: parseInt(document.getElementById('beklenenRefreshSaat').value) || 24,
+        sure_sapma_yuzdesi: parseInt(document.getElementById('sureSapmaYuzdesi').value) || 150
+    };
+
+    const res = await fetch('/api/ayarlar', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    });
+
+    if (res.ok) {
+        modalKapat('ayarModal');
+        datasetleriYukle();
+    }
+}
+
+// Sayfa yüklenince
+pbiDurumKontrol().then(() => {
+    datasetleriYukle();
+});
+</script>
+{% endblock %}

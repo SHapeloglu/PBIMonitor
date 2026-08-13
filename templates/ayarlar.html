@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% block title %}- Ayarlar{% endblock %}
+{% block topbar_title %}Ayarlar{% endblock %}
+
+{% block content %}
+
+<div class="card" style="max-width:600px">
+    <div class="card-header">
+        <div class="card-title">SMTP Mail Ayarlari</div>
+    </div>
+    <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
+        <div id="smtpMesaj"></div>
+
+        <div class="form-group">
+            <label class="form-label">SMTP Sunucu</label>
+            <input class="form-control" id="smtpHost" placeholder="mail.sirket.com">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Port</label>
+            <input class="form-control" id="smtpPort" type="number" value="587" placeholder="587">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Kullanici Adi (E-posta)</label>
+            <input class="form-control" id="smtpUser" placeholder="gonderici@sirket.com">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Sifre</label>
+            <input class="form-control" id="smtpPassword" type="password" placeholder="SMTP sifresi">
+        </div>
+
+        <div style="display:flex;gap:8px;align-items:center">
+            <button class="btn btn-primary" onclick="smtpKaydet()">Kaydet</button>
+            <button class="btn btn-secondary" onclick="smtpTest()">Test Maili Gonder</button>
+        </div>
+    </div>
+</div>
+
+<div class="card" style="max-width:600px;margin-top:16px">
+    <div class="card-header">
+        <div class="card-title">Gateway Uyarilari</div>
+    </div>
+    <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
+        <div id="gatewayAyarMesaj"></div>
+
+        <div class="checkbox-row">
+            <input type="checkbox" id="gwAlarmMail">
+            <label for="gwAlarmMail" style="margin:0">Veri kaynagi offline oldugunda mail gonder</label>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Mail Alicisi</label>
+            <input class="form-control" id="gwAliciMail" placeholder="uyari@sirket.com">
+        </div>
+
+        <div class="checkbox-row">
+            <input type="checkbox" id="gwAlarmWhatsapp">
+            <label for="gwAlarmWhatsapp" style="margin:0">Veri kaynagi offline oldugunda WhatsApp gonder</label>
+        </div>
+        <div class="form-group">
+            <label class="form-label">WhatsApp Alicisi (ulke kodu ile)</label>
+            <input class="form-control" id="gwAliciWhatsapp" placeholder="905XXXXXXXXX">
+        </div>
+        <div class="form-group">
+            <label class="form-label">WhatsApp Phone Number ID</label>
+            <input class="form-control" id="gwPhoneNumberId" placeholder="Meta phone_number_id">
+        </div>
+        <div class="form-group">
+            <label class="form-label">WhatsApp Erisim Tokeni</label>
+            <input class="form-control" id="gwWaToken" type="password" placeholder="Meta WhatsApp API token">
+        </div>
+
+        <div>
+            <button class="btn btn-primary" onclick="gatewayAyarKaydet()">Kaydet</button>
+        </div>
+    </div>
+</div>
+
+<div class="card" style="max-width:600px;margin-top:16px">
+    <div class="card-header">
+        <div class="card-title">Power BI Baglantisi</div>
+    </div>
+    <div style="padding:20px">
+        <p style="color:var(--pbi-text-secondary);font-size:13px;margin-bottom:16px">
+            Token durumu asagida gorunur. Suresi dolan tokenlar otomatik yenilenir. 
+            Yenilenemezse baglantiyi yenilemek gerekir.
+        </p>
+        <div id="pbiAyarDurum" style="margin-bottom:16px"></div>
+        <button class="btn btn-secondary btn-sm" onclick="baglantiSifirla()" style="background:rgba(232,17,35,0.15);border-color:rgba(232,17,35,0.4);color:var(--pbi-error)">
+            Baglantiyi Sifirla
+        </button>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function smtpYukle() {
+    const res = await fetch('/api/ayarlar/smtp');
+    if (!res.ok) return;
+    const d = await res.json();
+    if (d.smtp_host) document.getElementById('smtpHost').value = d.smtp_host;
+    if (d.smtp_port) document.getElementById('smtpPort').value = d.smtp_port;
+    if (d.smtp_user) document.getElementById('smtpUser').value = d.smtp_user;
+}
+
+async function smtpKaydet() {
+    const res = await fetch('/api/ayarlar/smtp', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            smtp_host: document.getElementById('smtpHost').value,
+            smtp_port: parseInt(document.getElementById('smtpPort').value) || 587,
+            smtp_user: document.getElementById('smtpUser').value,
+            smtp_password: document.getElementById('smtpPassword').value
+        })
+    });
+    const d = await res.json();
+    mesajGoster('smtpMesaj', d.status === 'ok' ? 'Ayarlar kaydedildi.' : 'Hata: ' + d.mesaj, d.status === 'ok' ? 'success' : 'error');
+}
+
+async function smtpTest() {
+    mesajGoster('smtpMesaj', 'Test maili gonderiliyor...', 'warning');
+    const res = await fetch('/api/ayarlar/smtp/test', {method: 'POST'});
+    const d = await res.json();
+    mesajGoster('smtpMesaj', d.mesaj || (d.status === 'ok' ? 'Mail gonderildi.' : 'Gonderilemedi.'), d.status === 'ok' ? 'success' : 'error');
+}
+
+async function baglantiSifirla() {
+    if (!confirm('PBI baglantiyi sifirlamak istediginize emin misiniz?')) return;
+    const res = await fetch('/api/pbi/baglanti_sifirla', {method: 'POST'});
+    const d = await res.json();
+    if (d.status === 'ok') {
+        mesajGoster('pbiAyarDurum', 'Baglanti sifirlandi. Anasayfadan yeniden baglanabilirsiniz.', 'warning');
+    }
+}
+
+function mesajGoster(elId, metin, tip) {
+    const el = document.getElementById(elId);
+    el.innerHTML = `<div class="alert alert-${tip}">${metin}</div>`;
+    setTimeout(() => el.innerHTML = '', 4000);
+}
+
+async function pbiDurumGoster() {
+    const res = await fetch('/api/pbi/durum');
+    const d = await res.json();
+    document.getElementById('pbiAyarDurum').innerHTML = d.bagli
+        ? '<span class="badge badge-green">Token Gecerli</span>'
+        : '<span class="badge badge-red">Token Yok / Suresi Dolmus</span>';
+}
+
+async function gatewayAyarYukle() {
+    const res = await fetch('/api/ayarlar/gateway');
+    if (!res.ok) return;
+    const d = await res.json();
+    document.getElementById('gwAlarmMail').checked = !!d.gateway_alarm_mail;
+    document.getElementById('gwAlarmWhatsapp').checked = !!d.gateway_alarm_whatsapp;
+    if (d.gateway_alici_mail) document.getElementById('gwAliciMail').value = d.gateway_alici_mail;
+    if (d.gateway_alici_whatsapp) document.getElementById('gwAliciWhatsapp').value = d.gateway_alici_whatsapp;
+    if (d.gateway_phone_number_id) document.getElementById('gwPhoneNumberId').value = d.gateway_phone_number_id;
+}
+
+async function gatewayAyarKaydet() {
+    const res = await fetch('/api/ayarlar/gateway', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            gateway_alarm_mail: document.getElementById('gwAlarmMail').checked,
+            gateway_alarm_whatsapp: document.getElementById('gwAlarmWhatsapp').checked,
+            gateway_alici_mail: document.getElementById('gwAliciMail').value,
+            gateway_alici_whatsapp: document.getElementById('gwAliciWhatsapp').value,
+            gateway_phone_number_id: document.getElementById('gwPhoneNumberId').value,
+            gateway_wa_token: document.getElementById('gwWaToken').value
+        })
+    });
+    const d = await res.json();
+    mesajGoster('gatewayAyarMesaj', d.status === 'ok' ? 'Gateway ayarlari kaydedildi.' : 'Hata: ' + d.mesaj, d.status === 'ok' ? 'success' : 'error');
+}
+
+smtpYukle();
+pbiDurumGoster();
+gatewayAyarYukle();
+</script>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}- Alarm Gecmisi{% endblock %}
+{% block topbar_title %}Alarm Gecmisi{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">Son 50 Alarm Kaydi</div>
+        <button class="btn btn-secondary btn-sm" onclick="yenile()">Yenile</button>
+    </div>
+    <div id="logIcerik">
+        <div class="loading">Yukleniyor...</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function yenile() {
+    const res = await fetch('/api/alarm_log');
+    const logs = await res.json();
+    const el = document.getElementById('logIcerik');
+
+    if (!logs.length) {
+        el.innerHTML = '<div class="loading">Henuz alarm kaydi yok.</div>';
+        return;
+    }
+
+    const renkler = {
+        'Failed': 'badge-red',
+        'Yavas': 'badge-yellow',
+        'OK': 'badge-green'
+    };
+
+    el.innerHTML = `
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Zaman</th>
+                    <th>Dataset</th>
+                    <th>Durum</th>
+                    <th>Kanal</th>
+                    <th>Mesaj</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${logs.map(l => `
+                    <tr>
+                        <td style="white-space:nowrap;font-size:12px;color:var(--pbi-text-secondary)">${l.created_at}</td>
+                        <td>${l.dataset_name || '-'}</td>
+                        <td><span class="badge ${renkler[l.durum] || 'badge-yellow'}">${l.durum}</span></td>
+                        <td style="font-size:12px">${l.kanal}</td>
+                        <td style="font-size:12px;color:var(--pbi-text-secondary);max-width:300px;white-space:pre-wrap">${l.mesaj}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+}
+
+yenile();
+</script>
+{% endblock %}
