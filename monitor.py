@@ -1,6 +1,7 @@
 import requests
 from datetime import datetime, timezone, timedelta
 from db import get_db
+from crypto_utils import decrypt
 
 def son_24_saat_mi(tarih_str):
     return son_n_saat_mi(tarih_str, 24)
@@ -85,7 +86,7 @@ def smtp_yukle(user):
         "host": user.get("smtp_host") or "",
         "port": user.get("smtp_port") or 587,
         "user": user.get("smtp_user") or user.get("email") or "",
-        "password": user.get("smtp_password") or ""
+        "password": decrypt(user.get("smtp_password")) or ""
     }
 
 def gateway_log_kaydet(user_id, gateway_id, gateway_name, datasource_id, datasource_name, durum, mesaj):
@@ -154,7 +155,7 @@ def gateway_kontrol(user_id, gateways, datasource_esleme=None):
                 whatsapp_gonder(
                     mesaj,
                     user.get("gateway_phone_number_id"),
-                    user.get("gateway_wa_token"),
+                    decrypt(user.get("gateway_wa_token")),
                     user["gateway_alici_whatsapp"]
                 )
             if user.get("gateway_alarm_mail") and user.get("gateway_alici_mail") and smtp["host"]:
@@ -197,7 +198,7 @@ def dataset_kontrol(user_id, datasets):
                 f"Power BI refresh zamanlayicisi devre disi birakildi"
             )
             if config.get("hata_whatsapp") and config.get("alici_whatsapp"):
-                whatsapp_gonder(mesaj, config["phone_number_id"], config["wa_token"], config["alici_whatsapp"])
+                whatsapp_gonder(mesaj, config["phone_number_id"], decrypt(config["wa_token"]), config["alici_whatsapp"])
                 alarm_log_kaydet(config["db_dataset_id"], "OtomatikDuraklatma", mesaj, "WhatsApp")
                 alarm_gonderildi.append("WhatsApp (duraklatma)")
             if config.get("hata_mail") and config.get("alici_mail") and smtp["host"]:
@@ -215,7 +216,7 @@ def dataset_kontrol(user_id, datasets):
                 f"Son bilinen refresh: {ds['son_refresh']}"
             )
             if config.get("hata_whatsapp") and config.get("alici_whatsapp"):
-                whatsapp_gonder(mesaj, config["phone_number_id"], config["wa_token"], config["alici_whatsapp"])
+                whatsapp_gonder(mesaj, config["phone_number_id"], decrypt(config["wa_token"]), config["alici_whatsapp"])
                 alarm_log_kaydet(config["db_dataset_id"], "KacirilnRefresh", mesaj, "WhatsApp")
                 alarm_gonderildi.append("WhatsApp (kacirilan)")
             if config.get("hata_mail") and config.get("alici_mail") and smtp["host"]:
@@ -243,7 +244,7 @@ def dataset_kontrol(user_id, datasets):
                     f"Zaman: {ds['son_refresh']}"
                 )
                 if config.get("hata_whatsapp") and config.get("alici_whatsapp"):
-                    whatsapp_gonder(mesaj, config["phone_number_id"], config["wa_token"], config["alici_whatsapp"])
+                    whatsapp_gonder(mesaj, config["phone_number_id"], decrypt(config["wa_token"]), config["alici_whatsapp"])
                     alarm_log_kaydet(config["db_dataset_id"], "Failed", mesaj, "WhatsApp")
                     alarm_gonderildi.append("WhatsApp")
                 if config.get("hata_mail") and config.get("alici_mail") and smtp["host"]:
@@ -273,7 +274,7 @@ def dataset_kontrol(user_id, datasets):
                         f"Zaman: {ds['son_refresh']}"
                     )
                     if config.get("hata_whatsapp") and config.get("alici_whatsapp"):
-                        whatsapp_gonder(mesaj_ardisik, config["phone_number_id"], config["wa_token"], config["alici_whatsapp"])
+                        whatsapp_gonder(mesaj_ardisik, config["phone_number_id"], decrypt(config["wa_token"]), config["alici_whatsapp"])
                         alarm_log_kaydet(config["db_dataset_id"], "ArdisikHata", mesaj_ardisik, "WhatsApp")
                         alarm_gonderildi.append("WhatsApp (ardisik)")
                     if config.get("hata_mail") and config.get("alici_mail") and smtp["host"]:
@@ -289,7 +290,7 @@ def dataset_kontrol(user_id, datasets):
                     f"Refresh suresi: {ds['sure']} saniye"
                 )
                 if config.get("hata_whatsapp") and config.get("alici_whatsapp"):
-                    whatsapp_gonder(mesaj, config["phone_number_id"], config["wa_token"], config["alici_whatsapp"])
+                    whatsapp_gonder(mesaj, config["phone_number_id"], decrypt(config["wa_token"]), config["alici_whatsapp"])
                     alarm_log_kaydet(config["db_dataset_id"], "Yavas", mesaj, "WhatsApp")
                     alarm_gonderildi.append("WhatsApp")
                 if config.get("hata_mail") and config.get("alici_mail") and smtp["host"]:
@@ -306,7 +307,7 @@ def dataset_kontrol(user_id, datasets):
                     f"Zaman: {ds['son_refresh']}"
                 )
                 if config.get("hata_whatsapp") and config.get("alici_whatsapp"):
-                    whatsapp_gonder(mesaj, config["phone_number_id"], config["wa_token"], config["alici_whatsapp"])
+                    whatsapp_gonder(mesaj, config["phone_number_id"], decrypt(config["wa_token"]), config["alici_whatsapp"])
                     alarm_log_kaydet(config["db_dataset_id"], "SifirSure", mesaj, "WhatsApp")
                     alarm_gonderildi.append("WhatsApp (sifir sure)")
                 if config.get("hata_mail") and config.get("alici_mail") and smtp["host"]:
@@ -343,7 +344,7 @@ def dataset_kontrol(user_id, datasets):
                         f"Esik: %{sapma_esik}"
                     )
                     if config.get("hata_whatsapp") and config.get("alici_whatsapp"):
-                        whatsapp_gonder(mesaj, config["phone_number_id"], config["wa_token"], config["alici_whatsapp"])
+                        whatsapp_gonder(mesaj, config["phone_number_id"], decrypt(config["wa_token"]), config["alici_whatsapp"])
                         alarm_log_kaydet(config["db_dataset_id"], "SureAnomali", mesaj, "WhatsApp")
                         alarm_gonderildi.append("WhatsApp (sure anomali)")
                     if config.get("hata_mail") and config.get("alici_mail") and smtp["host"]:

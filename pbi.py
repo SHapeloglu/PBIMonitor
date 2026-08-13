@@ -3,6 +3,7 @@ import base64
 import json
 from datetime import datetime, timezone
 from db import get_db
+from crypto_utils import encrypt, decrypt
 
 # Multi-tenant SaaS: sabit TENANT_ID yerine 'organizations' endpoint kullanilir.
 # Bu sayede herhangi bir is/okul Azure AD hesabi (farkli kiraci) baglanabilir.
@@ -39,11 +40,11 @@ def token_yukle(user_id):
         return None
 
     if datetime.now(timezone.utc).timestamp() < conn['token_expires_at'] - 60:
-        return conn['token']
+        return decrypt(conn['token'])
 
     # Token suresi dolmus veya dolmak uzere - refresh token ile yenilemeyi dene
     if conn.get('refresh_token'):
-        yeni = token_yenile(user_id, conn['refresh_token'])
+        yeni = token_yenile(user_id, decrypt(conn['refresh_token']))
         if yeni:
             return yeni['access_token']
 
@@ -80,13 +81,15 @@ def token_yenile(user_id, refresh_token):
 def token_kaydet(user_id, access_token, expires_in, refresh_token=None):
     expires_at = datetime.now(timezone.utc).timestamp() + expires_in
     gercek_tenant_id = _tid_from_access_token(access_token)
+    enc_token = encrypt(access_token)
+    enc_refresh = encrypt(refresh_token)
     db = get_db()
     cursor = db.cursor()
     cursor.execute("""
         INSERT INTO pbi_connections (user_id, tenant_id, token, token_expires_at, refresh_token)
         VALUES (%s, %s, %s, %s, %s)
         ON DUPLICATE KEY UPDATE token=%s, token_expires_at=%s, refresh_token=%s, tenant_id=%s
-    """, (user_id, gercek_tenant_id, access_token, expires_at, refresh_token, access_token, expires_at, refresh_token, gercek_tenant_id))
+    """, (user_id, gercek_tenant_id, enc_token, expires_at, enc_refresh, enc_token, expires_at, enc_refresh, gercek_tenant_id))
     db.commit()
     cursor.close()
     db.close()

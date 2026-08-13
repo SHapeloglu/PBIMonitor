@@ -2,6 +2,7 @@ import os
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from auth import auth
 from db import get_db
+from crypto_utils import encrypt, decrypt
 from pbi import token_gecerli_mi, token_yukle, token_kaydet, device_code_baslat, device_code_tamamla, datasetleri_getir, gatewayleri_getir
 from monitor import dataset_kontrol, gateway_kontrol
 
@@ -107,10 +108,10 @@ def ayarlar_kaydet():
         dataset_id,
         data.get('hata_whatsapp', False), data.get('hata_mail', False), data.get('basarili_mail', False),
         data.get('alici_whatsapp', ''), data.get('alici_mail', ''), data.get('normal_sure', 300),
-        data.get('phone_number_id', ''), data.get('wa_token', ''), data.get('ust_uste_hata_esik', 3), data.get('beklenen_refresh_saat', 24), data.get('sure_sapma_yuzdesi', 150),
+        data.get('phone_number_id', ''), encrypt(data.get('wa_token', '')), data.get('ust_uste_hata_esik', 3), data.get('beklenen_refresh_saat', 24), data.get('sure_sapma_yuzdesi', 150),
         data.get('hata_whatsapp', False), data.get('hata_mail', False), data.get('basarili_mail', False),
         data.get('alici_whatsapp', ''), data.get('alici_mail', ''), data.get('normal_sure', 300),
-        data.get('phone_number_id', ''), data.get('wa_token', ''), data.get('ust_uste_hata_esik', 3), data.get('beklenen_refresh_saat', 24), data.get('sure_sapma_yuzdesi', 150)
+        data.get('phone_number_id', ''), encrypt(data.get('wa_token', '')), data.get('ust_uste_hata_esik', 3), data.get('beklenen_refresh_saat', 24), data.get('sure_sapma_yuzdesi', 150)
     ))
     db.commit()
     cursor.close()
@@ -174,7 +175,7 @@ def smtp_ayarlari():
     data = request.json
     cursor.execute("""
         UPDATE users SET smtp_host=%s, smtp_port=%s, smtp_user=%s, smtp_password=%s WHERE id=%s
-    """, (data.get('smtp_host'), data.get('smtp_port', 587), data.get('smtp_user'), data.get('smtp_password'), user_id))
+    """, (data.get('smtp_host'), data.get('smtp_port', 587), data.get('smtp_user'), encrypt(data.get('smtp_password')), user_id))
     db.commit()
     cursor.close()
     db.close()
@@ -195,7 +196,7 @@ def smtp_test():
         return jsonify({"status": "hata", "mesaj": "Once SMTP ayarlarini kaydedin."})
 
     from monitor import mail_gonder
-    smtp = {"host": user['smtp_host'], "port": user['smtp_port'] or 587, "user": user['smtp_user'], "password": user['smtp_password'] or ''}
+    smtp = {"host": user['smtp_host'], "port": user['smtp_port'] or 587, "user": user['smtp_user'], "password": decrypt(user['smtp_password']) or ''}
     basarili = mail_gonder("PBI Monitor - Test Maili", "Bu bir test mailidir. SMTP ayarlariniz calisıyor.", user['email'], smtp)
     if basarili:
         return jsonify({"status": "ok", "mesaj": f"Test maili {user['email']} adresine gonderildi."})
@@ -271,7 +272,7 @@ def gateway_ayarlari():
     """, (
         data.get('gateway_alarm_mail', False), data.get('gateway_alarm_whatsapp', False),
         data.get('gateway_alici_mail', ''), data.get('gateway_alici_whatsapp', ''),
-        data.get('gateway_phone_number_id', ''), data.get('gateway_wa_token', ''),
+        data.get('gateway_phone_number_id', ''), encrypt(data.get('gateway_wa_token', '')),
         user_id
     ))
     db.commit()
