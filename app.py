@@ -148,6 +148,29 @@ def alarm_log():
         log['created_at'] = str(log['created_at'])
     return jsonify(logs)
 
+
+@app.route('/api/refresh_history/<dataset_id>')
+@giris_gerekli
+def refresh_history(dataset_id):
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("""
+        SELECT rh.refresh_time, rh.duration_seconds, rh.status
+        FROM refresh_history rh
+        JOIN datasets d ON d.id = rh.dataset_id
+        WHERE rh.dataset_id = %s AND d.user_id = %s
+        ORDER BY rh.refresh_time DESC
+        LIMIT 20
+    """, (dataset_id, session['user_id']))
+    rows = cursor.fetchall()
+    cursor.close()
+    db.close()
+    rows.reverse()
+    for r in rows:
+        r['refresh_time'] = str(r['refresh_time'])
+    return jsonify(rows)
+
+
 @app.route('/alarm-log')
 @giris_gerekli
 def alarm_log_sayfasi():

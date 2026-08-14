@@ -5,6 +5,8 @@
 
 {% block content %}
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+
 <div id="pbiUyari" class="alert alert-warning" style="display:none">
     ⚠️ Power BI bağlantısı yok. 
     <a href="#" onclick="pbiBaslat()" style="color: inherit; font-weight: 600;">Şimdi bağlan →</a>
@@ -125,6 +127,17 @@
         <div class="modal-footer">
             <button class="btn btn-secondary" onclick="modalKapat('ayarModal')">İptal</button>
             <button class="btn btn-primary" onclick="ayarlariKaydet()">Kaydet</button>
+        </div>
+    </div>
+</div>
+
+<!-- Refresh Gecmisi Modal -->
+<div class="modal" id="gecmisModal">
+    <div class="modal-box">
+        <div class="modal-title" id="gecmisBaslik">Refresh Gecmisi</div>
+        <canvas id="gecmisChart" height="200"></canvas>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="modalKapat('gecmisModal')">Kapat</button>
         </div>
     </div>
 </div>
@@ -270,6 +283,10 @@ async function datasetleriYukle() {
                     onclick="modalAc('${ds.id}')">
                     ⚙️
                 </button>
+                <button class="btn btn-secondary btn-sm"
+                    onclick="gecmisAc('${ds.id}', '${ds.name}')">
+                    📊
+                </button>
             </td>
         </tr>`;
     }
@@ -366,7 +383,49 @@ async function ayarlariKaydet() {
     }
 }
 
-// Sayfa yüklenince
+let gecmisChartInstance = null;
+
+async function gecmisAc(id, name) {
+    document.getElementById('gecmisBaslik').textContent = name + ' — Refresh Gecmisi';
+    document.getElementById('gecmisModal').classList.add('open');
+
+    const res = await fetch('/api/refresh_history/' + id);
+    const rows = await res.json();
+
+    const labels = rows.map(r => r.refresh_time.replace('T', ' ').substring(5, 16));
+    const veriler = rows.map(r => r.duration_seconds);
+    const renkler = rows.map(r => r.status === 'Completed' ? '#0f9d58' : '#d93025');
+
+    const ctx = document.getElementById('gecmisChart').getContext('2d');
+    if (gecmisChartInstance) {
+        gecmisChartInstance.destroy();
+    }
+    gecmisChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Sure (sn)',
+                data: veriler,
+                borderColor: '#f2c811',
+                backgroundColor: 'rgba(242,200,17,0.15)',
+                pointBackgroundColor: renkler,
+                pointRadius: 4,
+                tension: 0.2,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, title: { display: true, text: 'Saniye' } }
+            }
+        }
+    });
+}
+
+// Sayfa yuklenince
 pbiDurumKontrol().then(() => {
     datasetleriYukle();
 });
