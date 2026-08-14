@@ -1,50 +1,65 @@
-# Bilinen Hatalar ve Cozumleri
+# ERRORS.md
 
-## cursor(dictionary=True) hatasi
-Hata: TypeError: Connection.cursor() got an unexpected keyword argument 'dictionary'
-Neden: PyMySQL bu parametreyi desteklemiyor
-Cozum: cursor() kullan, DictCursor db.py'de zaten tanimli
+## Known Issues & Resolutions
 
-## DB Access Denied
-Hata: Access denied for user
-Neden: mysql.connector MariaDB ile uyumsuz veya sifre yanlis
-Cozum: PyMySQL kullan, .env dosyasindaki sifreyi kontrol et
+### 1. Docker Network Mismatch
+**Symptom:** Containers can't communicate after `docker compose down/up`
+**Root Cause:** New containers on `pbimonitor_final_pbimonitor-net`, old DB on `pbimonitor_pbimonitor-net`
+**Resolution:**
+```bash
+docker network connect pbimonitor_pbimonitor-net pbimonitor-web
+docker network connect pbimonitor_pbimonitor-net pbimonitor-scheduler
+docker restart pbimonitor-web pbimonitor-scheduler
+```
 
-## Emoji DB hatasi
-Hata: Incorrect string value '\xE2\x9C\x85...'
-Cozum: monitor.py'de emoji kullanma, mesajlari ASCII ile yaz
+### 2. Heredoc Failures in Bash
+**Symptom:** `<< 'PYEOF'` script doesn't execute, no errors shown
+**Root Cause:** Docker/VPS environment limitation
+**Resolution:** Use base64-encoded one-liner or `python3 -c` with escaped strings
 
-## Token gecersiz
-Hata: 401 Power BI API
-Neden: Token suresi dolmus (1 saat)
-Cozum: pbi.py'de token_yenile() ile otomatik yenileniyor (refresh_token DB'de kayitli)
-Not: refresh_token NULL olan eski kullanicilar bir kerelik yeniden baglanmali
+### 3. Sed Multi-line Replacements Fail Silently
+**Symptom:** Complex `sed` commands don't work, no error message
+**Root Cause:** Bash terminal limitation
+**Resolution:** Write Python patch script with exact string anchors + validation
 
-## Docker baglanti sorunu
-Hata: DB'ye baglanamadi
-Cozum: Artik ayri pbimonitor-db container var, DB_HOST=db (.env'de)
+### 4. MySQL "ADD COLUMN IF NOT EXISTS" Not Supported
+**Symptom:** `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` fails on MySQL 8.0
+**Root Cause:** MySQL 8.0 doesn't support this syntax
+**Resolution:** Use comma-separated `ADD COLUMN` statements
 
-## ALTER TABLE IF NOT EXISTS hatasi
-Hata: ERROR 1064 - syntax error near 'IF NOT EXISTS smtp_host'
-Neden: MySQL 8.0 ADD COLUMN IF NOT EXISTS desteklemiyor
-Cozum: Virgille ayir: ALTER TABLE t ADD COLUMN a VARCHAR(255), ADD COLUMN b INT;
+### 5. Encryption Key Mismatch
+**Symptom:** `cryptography.fernet.InvalidToken` when decrypting
+**Root Cause:** `.env` `ENCRYPTION_KEY` changed or not loaded
+**Resolution:** Verify `.env` exists, verify key format, restart containers
 
-## Scheduler logu gorünmüyor
-Hata: docker logs pbimonitor-scheduler bos donüyor
-Neden: Python print() buffered modda calisıyor
-Cozum: Dockerfile'a ENV PYTHONUNBUFFERED=1 ekle
+### 6. PBI API Throttling
+**Symptom:** 429 Too Many Requests from Power BI REST API
+**Root Cause:** Scheduler checks too frequently
+**Resolution:** Current interval is 30 min (can increase to 60 min if needed)
 
-## docker-compose command not found
-Hata: Command 'docker-compose' not found
-Neden: Sunucuda Docker Compose v1 yuklu degil
-Cozum: docker compose (tire yok, v2 syntax) kullan
+### 7. WhatsApp Token Expiry
+**Symptom:** WhatsApp alerts stop working
+**Root Cause:** Meta Graph API token expired
+**Resolution:** Regenerate token in Meta Business Manager, update via dashboard
 
-## Gateway listesi bos donuyor
-Hata: /gateway sayfasinda "erisebildiginiz bir gateway bulunamadi" mesaji, gateway var olmasina ragmen
-Neden: Gateway.Read.All scope'u sonradan eklendi, eski token/refresh_token bu izni icermiyor
-Cozum: Ayarlar sayfasindan "Baglantiyi Sifirla" ile PBI baglantisini yeniden kur (device code flow tekrar calisir, yeni scope'lar onaylanir)
+### 8. SMTP Connection Fails
+**Symptom:** "Connection refused" or "Authentication failed"
+**Root Cause:** Invalid credentials, port, or SMTP server offline
+**Resolution:** Test via dashboard `/api/ayarlar/smtp/test`, check port 587/465
 
-## Ayarlar modal acilmiyor
-Hata: Cog butonuna tiklaninca modal acilmiyor
-Neden: onclick attribute icine JSON.stringify gomuluyordu, JSON'daki cift tirnak HTML attribute'unu bozuyordu
-Cozum: datasetMap JS objesi ile id->dataset esleme, onclick'e sadece id gec
+### 9. Refresh History Shows No Data
+**Symptom:** Chart modal opens but shows empty graph
+**Root Cause:** `refresh_history` table is empty (no refreshes recorded yet)
+**Resolution:** Wait for scheduler (30 min interval), manually trigger check, verify `monitor.py`
+
+### 10. Azure App Registration Not Multitenant
+**Symptom:** Users from other tenants can't sign in
+**Root Cause:** App Registration set to "Single tenant"
+**Resolution:** Requires Azure AD admin access (currently unavailable)
+
+## Rollback Procedure
+1. Stop: `docker compose down`
+2. Revert: `git checkout HEAD~1 app.py templates/dashboard.html`
+3. Rebuild: `docker compose up -d --build`
+4. Network fix: `docker network connect pbimonitor_pbimonitor-net pbimonitor-web`
+5. Verify: `docker logs pbimonitor-web --tail 20`
