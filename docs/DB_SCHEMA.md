@@ -1,127 +1,80 @@
-# Veritabani Semasi
+# DB_SCHEMA.md — Veritabanı Şeması
 
-Asagidaki SQL ile tum tablolari olustur (init.sql ile otomatik yapilir):
+---
 
-```sql
-CREATE DATABASE IF NOT EXISTS pbimonitor CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE pbimonitor;
+## Bağlantı Bilgileri
 
-CREATE TABLE users (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    plan ENUM('free','pro','enterprise') DEFAULT 'free',
-    smtp_host VARCHAR(255),
-    smtp_port INT DEFAULT 587,
-    smtp_user VARCHAR(255),
-    smtp_password VARCHAR(255),
-    gateway_alarm_mail TINYINT DEFAULT 0,
-    gateway_alarm_whatsapp TINYINT DEFAULT 0,
-    gateway_alici_mail VARCHAR(255),
-    gateway_alici_whatsapp VARCHAR(50),
-    gateway_phone_number_id VARCHAR(255),
-    gateway_wa_token TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
+Container: pbimonitor-db
+DB Adı: pbimonitor
+Kullanıcı: pbimonitor
+Şifre: BirNisan82
+Port: 3306
 
-CREATE TABLE pbi_connections (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL UNIQUE,
-    tenant_id VARCHAR(255),
-    token MEDIUMTEXT,
-    token_expires_at BIGINT,
-    refresh_token MEDIUMTEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id)
-);
+DB'ye bağlan:
+  docker exec -it pbimonitor-db mysql -u pbimonitor -pBirNisan82 pbimonitor
 
-CREATE TABLE datasets (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    pbi_dataset_id VARCHAR(255),
-    workspace_id VARCHAR(255),
-    workspace_name VARCHAR(255),
-    name VARCHAR(255),
-    is_active TINYINT DEFAULT 1,
-    FOREIGN KEY (user_id) REFERENCES users(id)
-);
+---
 
-CREATE TABLE dataset_config (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    dataset_id INT NOT NULL UNIQUE,
-    hata_whatsapp TINYINT DEFAULT 0,
-    hata_mail TINYINT DEFAULT 0,
-    basarili_mail TINYINT DEFAULT 0,
-    alici_whatsapp VARCHAR(50),
-    alici_mail VARCHAR(255),
-    normal_sure INT DEFAULT 300,
-    phone_number_id VARCHAR(255),
-    wa_token TEXT,
-    FOREIGN KEY (dataset_id) REFERENCES datasets(id)
-);
+## Güncel Şema
 
-CREATE TABLE alarm_log (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    dataset_id INT NOT NULL,
-    durum VARCHAR(50),
-    mesaj TEXT,
-    kanal VARCHAR(50),
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (dataset_id) REFERENCES datasets(id)
-);
+users — id, email, password, plan
+  smtp_host, smtp_port, smtp_user, smtp_password (şifreli)
+  gateway_alarm_mail, gateway_alarm_whatsapp
+  gateway_alici_mail, gateway_alici_whatsapp
+  gateway_phone_number_id, gateway_wa_token (şifreli)
 
-CREATE TABLE gateway_status_log (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    gateway_id VARCHAR(255),
-    gateway_name VARCHAR(255),
-    datasource_id VARCHAR(255),
-    datasource_name VARCHAR(255),
-    durum VARCHAR(50),
-    mesaj TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id)
-);
-```
+pbi_connections — user başına 1 kayıt (UNIQUE user_id)
+  id, user_id, tenant_id
+  token (şifreli), token_expires_at, refresh_token (şifreli)
 
-## Uygulanan Migrasyonlar (Contabo - 2026-07-29)
+datasets — user'ın izlediği datasetler
+  id, user_id, pbi_dataset_id
+  workspace_id, workspace_name, name, is_active
 
-```sql
--- pbi_connections tablosuna refresh_token eklendi
-ALTER TABLE pbi_connections ADD COLUMN refresh_token MEDIUMTEXT AFTER token_expires_at;
+dataset_config — dataset başına alarm ayarları
+  id, dataset_id (UNIQUE)
+  hata_whatsapp, hata_mail, basarili_mail
+  alici_whatsapp, alici_mail
+  normal_sure (saniye), phone_number_id
+  wa_token (şifreli)
+  ust_uste_hata_esik (varsayılan 3)
+  ardisik_hata_sayisi (sayaç)
+  beklenen_refresh_saat (varsayılan 24)
+  sure_sapma_yuzdesi (varsayılan 150)
 
--- users tablosuna SMTP kolonlari eklendi
-ALTER TABLE users ADD COLUMN smtp_host VARCHAR(255);
-ALTER TABLE users ADD COLUMN smtp_port INT DEFAULT 587;
-ALTER TABLE users ADD COLUMN smtp_user VARCHAR(255);
-ALTER TABLE users ADD COLUMN smtp_password VARCHAR(255);
-```
+alarm_log — dataset alarm geçmişi
+  id, dataset_id, durum, mesaj, kanal, created_at
+  durum: Failed, Yavas, OK, OtomatikDuraklatma, KacirilnRefresh, ArdisikHata, SifirSure, SureAnomali
 
-## Uygulanan Migrasyonlar (Gateway Monitoring)
+gateway_status_log — gateway alarm geçmişi
+  id, user_id, gateway_id, gateway_name
+  datasource_id, datasource_name
+  durum, mesaj, created_at
 
-Bu migrasyon `migrations_gateway.sql` dosyasinda da mevcut, Contabo'da su sekilde calistirilir:
-`docker exec -i pbimonitor-db mysql -u pbimonitor -pSIFRE pbimonitor < migrations_gateway.sql`
+refresh_history — süre anormalliği için
+  id, dataset_id, refresh_time, duration_seconds, status, created_at
 
-```sql
-ALTER TABLE users
-    ADD COLUMN gateway_alarm_mail TINYINT DEFAULT 0,
-    ADD COLUMN gateway_alarm_whatsapp TINYINT DEFAULT 0,
-    ADD COLUMN gateway_alici_mail VARCHAR(255),
-    ADD COLUMN gateway_alici_whatsapp VARCHAR(50),
-    ADD COLUMN gateway_phone_number_id VARCHAR(255),
-    ADD COLUMN gateway_wa_token TEXT;
+---
 
-CREATE TABLE IF NOT EXISTS gateway_status_log (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    gateway_id VARCHAR(255),
-    gateway_name VARCHAR(255),
-    datasource_id VARCHAR(255),
-    datasource_name VARCHAR(255),
-    durum VARCHAR(50),
-    mesaj TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id)
-);
-```
+## Migrasyonlar
 
+2026-07-29 — SMTP + Refresh Token
+  ALTER TABLE pbi_connections ADD COLUMN refresh_token MEDIUMTEXT
+  ALTER TABLE users ADD COLUMN smtp_host, smtp_port, smtp_user, smtp_password
+
+2026-08-06 — Gateway Monitoring
+  ALTER TABLE users ADD COLUMN gateway_alarm_mail, gateway_alarm_whatsapp, etc.
+  CREATE TABLE gateway_status_log
+
+2026-08-11 — Ardışık Başarısızlık
+  ALTER TABLE dataset_config ADD COLUMN ardisik_hata_sayisi INT DEFAULT 0
+
+2026-08-12 — Süre Anormalliği
+  CREATE TABLE refresh_history
+  ALTER TABLE dataset_config ADD COLUMN sure_sapma_yuzdesi INT DEFAULT 150
+
+2026-08-13 — Token Şifreleme
+  Şema değişikliği yok. TEXT/MEDIUMTEXT kolonları artık Fernet şifreli:
+  pbi_connections.token, pbi_connections.refresh_token
+  users.smtp_password, users.gateway_wa_token
+  dataset_config.wa_token
