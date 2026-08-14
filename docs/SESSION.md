@@ -1,60 +1,23 @@
-# SESSION.md — Son Oturum Özeti
+# SESSION.md
 
-Son güncelleme: 2026-08-13
+**Date:** 2026-08-14 | **Status:** Refresh History Chart Complete
 
----
+## Current Session Summary
+- ✅ Deployed refresh history graph feature (Chart.js + `/api/refresh_history/<dataset_id>` endpoint)
+- ✅ Dashboard 📊 button added to each dataset row
+- ✅ Docker rebuild + network reconnect + containers restarted
+- ✅ Commit: `3b1c56b`
 
-## Tamamlanan İşler (2026-08-13)
+## Key Metrics
+- Total alarms implemented: 7 (Ardışık Başarısızlık, Sıfır Süre, Kaçırılan Refresh, Duration Anomaly, Gateway issues)
+- Encrypted fields: 5 (Fernet AES-128)
+- Deployed on: Contabo VPS (95.111.242.96:8003)
+- DB: MySQL 8.0, Tables: 9 (users, datasets, dataset_config, refresh_history, alarm_log, gateway_log, pbi_connections, gateway_health, alarm_history)
 
-### Token / Hassas Alan Şifreleme — TAMAMLANDI
+## Blocked Items
+1. **Azure App Registration → Multitenant** — requires Azure AD admin access; deferred
+2. **Grup C (4 items)** — all API-limited; moved to long-term backlog
 
-Şifrelenen alanlar:
-  pbi_connections.token, refresh_token
-  users.smtp_password, gateway_wa_token
-  dataset_config.wa_token
-
-Yapılanlar:
-  crypto_utils.py eklendi — Fernet encrypt/decrypt helper
-  pbi.py: token_kaydet() encrypt, token_yukle() decrypt
-  monitor.py: smtp_password, wa_token decrypt
-  app.py: tüm yazma noktaları encrypt, okuma decrypt
-  requirements.txt: cryptography eklendi
-  .env: ENCRYPTION_KEY eklendi
-  Git commit: efacb93
-
----
-
-## Mevcut Alarm Türleri
-
-1. Dataset Failed
-2. Yavaş Refresh
-3. Başarılı Rapor
-4. Gateway Offline
-5. Kaçırılan Refresh
-6. Otomatik Duraklatma
-7. Ardışık Başarısızlık
-8. Sıfır Süre Refresh
-9. Süre Anomalisi
-
----
-
-## Sunucu Durumu
-
-pbimonitor-web: UP (port 8003, güncel kod)
-pbimonitor-scheduler: UP (güncel kod)
-pbimonitor-db: UP (healthy)
-
----
-
-## Bekleyen
-
-1. Azure Portal adımı — Multitenant yapılmadı
-2. Dashboard'da refresh geçmişi grafiği
-3. Uzun vade backlog'dan seçim
-
----
-
-## Bir Sonraki Oturum
-
-docs/ klasöründen tüm MD dosyalarını GitHub'a push ettik.
-Yeni oturum başlarken PBIMonitor_docs_20260813b.zip'i yükle.
+## Next Session Entry Points
+- Optional: Dashboard UI polish (colors, spacing, responsive)
+- Long-term: Teams/Telegram/Slack integrations, PostgreSQL/Oracle support
