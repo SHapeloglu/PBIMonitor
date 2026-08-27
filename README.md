@@ -1,133 +1,129 @@
 # PBIMonitor
 
-A multi-tenant **Power BI monitoring SaaS platform** that detects and alerts on dataset refresh failures, gateway issues, and anomalies that Power BI's native tooling doesn't surface.
+**Power BI Monitoring SaaS** — Multi-tenant, açık kaynak bir izleme platformu.
 
-**Live:** https://95.111.242.96:8003
+Power BI'ın yerli araçlarının açığa çıkarmadığı dataset yenileme başarısızlıklarını, gateway sorunlarını ve anormallikleri algılayıp uyarı gönderir.
 
----
-
-## Features
-
-### 8 Alarm Conditions
-- **Consecutive Failures** — Track failed refresh attempts counter
-- **Zero Duration Refresh** — Detect incomplete/phantom refreshes (0 seconds = no data)
-- **Missed Refresh** — Alert when refresh doesn't occur at expected time
-- **Refresh Duration Anomaly** — Detect unusual slowdowns (rolling 10-refresh average)
-- **Schedule Disabled** — Catch dataset schedule toggle-offs
-- **Gateway Down** — Monitor Power BI gateway health
-- **Dataset Count Mismatch** — Track import mode dataset changes
-- (Attempted: *Completed with Warnings* — blocked by Power BI API limitations)
-
-### Infrastructure
-- **Multi-tenant** — Azure AD OAuth (`organizations` endpoint)
-- **Encryption** — Fernet AES-128 for sensitive fields (tokens, credentials)
-- **Alerts** — WhatsApp (Meta Graph API) + Email (SMTP per user)
-- **Responsive UI** — Mobile-first design (hamburger menu, adaptive grid)
-- **Refresh History** — 20-refresh chart per dataset via Chart.js
-- **Docker Compose** — 3 containers (web, scheduler, database)
+🌐 **Canlı:** https://95.111.242.96:8003
 
 ---
 
-## Tech Stack
+## Özellikler
 
-- **Backend:** Flask + PyMySQL + MySQL 8.0
-- **Frontend:** Vanilla JS, Chart.js (CDN), responsive CSS
-- **Auth:** Azure AD OAuth (device-code flow)
-- **Scheduler:** Python daemon (30 min interval)
-- **Alerts:** Meta Graph API (WhatsApp), SMTP (Email)
-- **Encryption:** Python \`cryptography\` (Fernet)
-- **Deployment:** Docker Compose on Ubuntu 24
+### 8 Uyarı Koşulu
+1. **Ardışık Başarısızlık** — Başarısız yenileme denemelerini sayaçla
+2. **Sıfır Süre Yenileme** — Eksik/hayalet yenilemeler (0 saniye = veri yok)
+3. **Kaçırılan Yenileme** — Beklenen zamanda yenileme olmadığında uyar
+4. **Anomali Tespiti** — Sürede anormal artışları algıla
+5. **Devre Kapalı** — Dataset zamanlaması kapatıldığında yakala
+6. **Gateway Çöktü** — Power BI gateway durumunu izle
+7. **Dataset Sayısı Uyumsuzluğu** — Dataset değişikliklerini takip et
+8. **Uyarılarla Tamamlandı** *(Denendi — Power BI API kısıtlaması)*
+
+### Altyapı
+- **Multi-Tenant** — Azure AD OAuth
+- **Şifreleme** — Fernet AES-128
+- **Uyarılar** — WhatsApp + Email
+- **Mobil Uyumlu** — Responsive hamburger menü
+- **Yenileme Geçmişi** — Chart.js grafikleri
+- **Docker Compose** — 3 konteyner
 
 ---
 
-## Quick Start
+## Teknoloji Yığını
 
-### Prerequisites
-- Python 3.13+, Docker, MySQL 8.0
-- Azure AD App Registration
-- Meta Business Account (WhatsApp)
+- **Backend:** Flask + PyMySQL
+- **Veritabanı:** MySQL 8.0
+- **Frontend:** Vanilla JS, Chart.js, CSS Responsive
+- **Kimlik Doğrulama:** Azure AD OAuth
+- **Planlayıcı:** Python daemon (30 dakika)
+- **Uyarılar:** Meta Graph API, SMTP
 
-### Installation
+---
 
-\`\`\`bash
+## Hızlı Başlangıç
+
+```bash
 git clone https://github.com/SHapeloglu/PBIMonitor.git
 cd PBIMonitor
 cp .env.example .env
-# Edit .env with credentials
 docker compose up -d
-\`\`\`
+```
 
-Access: http://localhost:8003
-
----
-
-## API Endpoints
-
-| Method | Endpoint | Purpose |
-|--------|----------|---------|
-| GET | \`/\` | Dashboard |
-| GET | \`/api/datasets\` | List datasets |
-| POST | \`/api/kontrol\` | Refresh check |
-| GET | \`/api/alarm_log\` | Alarm history |
-| GET | \`/api/refresh_history/<id>\` | Chart data |
+**Erişim:** http://localhost:8003
 
 ---
 
-## Database
+## API Uç Noktaları
 
-**9 Tables:** users, pbi_connections, datasets, dataset_config, refresh_history, alarm_log, alarm_history, gateway_health, gateway_log
-
-Encrypted fields: tokens, credentials (Fernet AES-128)
-
----
-
-## Responsive Design
-
-| Screen | Layout | Sidebar | Grid |
-|--------|--------|---------|------|
-| Desktop (≥769px) | Fixed 240px | Fixed | 4 col |
-| Tablet (≤768px) | Slide-in | Hamburger | 2 col |
-| Mobile (≤420px) | Full-width | Hamburger | 1 col |
+| Method | Uç Nokta | Açıklama |
+|--------|----------|----------|
+| GET | `/` | Kontrol Paneli |
+| GET | `/api/datasets` | Veri setlerini listele |
+| POST | `/api/kontrol` | Anlık yenileme kontrolü |
+| GET | `/api/alarm_log` | Uyarı geçmişi |
+| GET | `/api/refresh_history/<id>` | Yenileme grafiği |
 
 ---
 
-## Known Limitations
+## Veritabanı
 
-### API-Blocked
-- "Completed with Warnings" — No Power BI REST API support
-- Credential expiry — Limited metadata
-- Capacity overrun — Premium-only
-- Zero-row detection — No row count API
+**9 Tablo:** users, pbi_connections, datasets, dataset_config, refresh_history, alarm_log, alarm_history, gateway_health, gateway_log
 
-### Channels
+**Şifreli Alanlar:** tokens, credentials (Fernet AES-128)
+
+---
+
+## Duyarlı Tasarım
+
+| Ekran | Sidebar | Grid |
+|-------|---------|------|
+| Masaüstü (≥769px) | Sabit | 4 sütun |
+| Tablet (≤768px) | Hamburger | 2 sütun |
+| Mobil (≤420px) | Hamburger | 1 sütun |
+
+---
+
+## Bilinen Sınırlamalar
+
+### Power BI API Kısıtlamaları
+- "Uyarılarla Tamamlandı" — API'de veri yok
+- Kimlik bilgisi süresi — Sınırlı destek
+- Kapasite aşımı — Premium-only
+- Sıfır satır tespiti — API yok
+
+### Desteklenen Kanallar
 - ✅ WhatsApp, Email
 - ⏸ Teams, Slack, Telegram
 
 ---
 
-## Development
+## Geliştirme
 
-\`\`\`bash
+```bash
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-python3 app.py  # http://localhost:5000
-\`\`\`
+python3 app.py
+```
 
 ---
 
-## Docs
+## Dokümantasyon
 
-- [SESSION.md](docs/SESSION.md) — Current status
-- [ARCHITECT.md](docs/ARCHITECT.md) — System design
-- [CLAUDE.md](docs/CLAUDE.md) — Dev patterns
-- [ERRORS.md](docs/ERRORS.md) — Known issues
+- [SESSION.md](docs/SESSION.md) — Mevcut durum
+- [ARCHITECT.md](docs/ARCHITECT.md) — Sistem tasarımı
+- [ERRORS.md](docs/ERRORS.md) — Bilinen sorunlar
+- [BACKLOG.md](docs/BACKLOG.md) — Yol haritası
 
 ---
 
-## License
+## Lisans
 
 MIT
 
-**Last Updated:** August 16, 2026  
-**Status:** ✅ Responsive UI Complete
+---
+
+**Durum:** ✅ v1.2 — Responsive UI Complete  
+**Son Güncelleme:** 16 Ağustos 2026  
+**Repo:** https://github.com/SHapeloglu/PBIMonitor
