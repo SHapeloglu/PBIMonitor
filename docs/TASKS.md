@@ -2,7 +2,7 @@
 
 ## ✅ Completed
 
-### Alarms (Feat. #1–#7)
+### Alarms (Feat. #1–#8)
 - [x] #1 Ardışık Başarısızlık (Consecutive Failure) — counter-based tracking
 - [x] #2 Schedule Disabled
 - [x] #3 Gateway Health Down
@@ -15,8 +15,9 @@
 ### Infrastructure
 - [x] Encryption (Fernet) — all sensitive fields
 - [x] Docker Compose (Flask + PyMySQL + MySQL 8.0 + Scheduler daemon)
-- [x] GitHub (public repo, `.env` excluded, migrations committed)
+- [x] GitHub (public repo, `.env` excluded)
 - [x] Refresh History Chart (Chart.js, `/api/refresh_history` endpoint)
+- [x] Dashboard Responsive UI (hamburger menu, adaptive grid, mobile-optimized)
 
 ## ⏸ Blocked (Awaiting Admin or External)
 

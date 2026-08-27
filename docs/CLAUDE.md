@@ -21,6 +21,12 @@ After `docker rm -f` + recreation:
 - Use comma-separated `ADD COLUMN` statements instead
 - Prepare patch script to validate before deployment
 
+### Git SSH Issues
+- Check ~/.gitconfig for conflicting url overrides
+- Use: `git config --global --unset-all url.git@github.com:.insteadOf`
+- Test with: `git config --list | grep url`
+- Fall back to HTTPS with credential helper: `git config --global credential.helper store`
+
 ## Session Management Protocol
 
 1. **Self-monitor:** Every ~10 messages, check if session exceeds ~15 messages or involves heavy file ops
@@ -30,8 +36,9 @@ After `docker rm -f` + recreation:
    - Update ARCHITECT.md (system design)
    - Update DB_SCHEMA.md (table structure)
    - Update ERRORS.md (known issues)
+   - Update CLAUDE.md (patterns & learnings)
    - Git commit + push all docs
-   - Instruct user to download zip
+   - Instruct user to download docs zip
 
 3. **Session entry (next time):**
    - Fetch user's zip with all .md files
@@ -56,4 +63,4 @@ After `docker rm -f` + recreation:
 4. Run on sunucu → verify output
 5. Docker rebuild → network connect → restart
 6. Verify logs
-7. Git commit
+7. Git commit + push

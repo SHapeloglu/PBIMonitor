@@ -8,6 +8,7 @@ PBIMonitor — Multi-tenant Power BI monitoring SaaS on Contabo VPS (95.111.242.
 **Auth:** Azure AD OAuth (device-code flow)
 **Alerts:** WhatsApp (Meta Graph API) + Email (SMTP)
 **Encryption:** Fernet (AES-128)
+**Frontend:** Vanilla JS, Chart.js, responsive CSS (hamburger menu, mobile-optimized)
 
 ## Deployment
 - **Server:** Contabo VPS (95.111.242.96:8003)
@@ -15,10 +16,10 @@ PBIMonitor — Multi-tenant Power BI monitoring SaaS on Contabo VPS (95.111.242.
 - **Network:** `pbimonitor_pbimonitor-net` (bridge)
 
 ## Key Routes
-- `/` — dashboard (stats, datasets)
+- `/` — dashboard (stats, datasets, responsive layout)
 - `/api/datasets` — list user's datasets (PBI API)
 - `/api/kontrol` — run immediate refresh check
-- `/api/ayarlar` — save dataset thresholds
+- `/api/ayarlar` — settings page (dataset config, SMTP)
 - `/api/alarm_log` — fetch alarm history
 - `/api/refresh_history/<dataset_id>` — fetch last 20 refreshes
 - `/api/gateway_log` — gateway health history
@@ -50,6 +51,12 @@ PBIMonitor — Multi-tenant Power BI monitoring SaaS on Contabo VPS (95.111.242.
 ## Encryption (Fernet)
 - Key: `ENCRYPTION_KEY` from `.env`
 - Fields: token, refresh_token, smtp_password, wa_token
+
+## Frontend Responsive Design
+- **Desktop (≥769px):** Sidebar fixed 240px, 4-col stats grid, full tables
+- **Tablet (≤768px):** Sidebar hamburger toggle (fixed, transform slide), 2-col stats grid, table horizontal scroll
+- **Mobile (≤420px):** Sidebar hamburger, 1-col stats grid, table scroll, reduced modal padding
+- **Transitions:** CSS transform .2s ease (smooth hamburger animation)
 
 ## Known Limitations
 - API gaps: "Completed with Warnings", capacity metrics, row counts, credential expiry
